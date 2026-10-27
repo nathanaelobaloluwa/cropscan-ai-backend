@@ -2,16 +2,17 @@ import logging
 import os
 from typing import Any, Dict, Optional, Tuple, Union
 import torch
+from flask import current_app, has_app_context
 from PIL import Image
 from transformers import AutoModelForImageClassification, MobileNetV2ImageProcessorPil
 
+from app.config import DEFAULT_CONFIDENCE_THRESHOLD, validate_confidence_threshold
 from app.services.guidance import GuidanceService
 
 logger = logging.getLogger(__name__)
 
 # Default provisional configuration
 DEFAULT_MODEL_NAME = "linkanjarad/mobilenet_v2_1.0_224-plant-disease-identification"
-DEFAULT_CONFIDENCE_THRESHOLD = 0.40
 DEFAULT_DEVICE = "cpu"
 
 
@@ -87,19 +88,28 @@ class PredictionService:
     ):
         self.model_name = model_name or os.getenv("CROPSCAN_MODEL_NAME", DEFAULT_MODEL_NAME)
 
-        env_threshold = os.getenv("PREDICTION_CONFIDENCE_THRESHOLD")
+        # Resolve validated confidence threshold:
+        # Priority 1: Explicit parameter override (validated)
+        # Priority 2: Current Flask app config (if in active app context)
+        # Priority 3: Environment variable fallback (validated)
         if confidence_threshold is not None:
-            self.confidence_threshold = float(confidence_threshold)
-        elif env_threshold is not None:
-            try:
-                self.confidence_threshold = float(env_threshold)
-            except ValueError:
-                logger.warning(
-                    f"Invalid PREDICTION_CONFIDENCE_THRESHOLD '{env_threshold}'. Falling back to {DEFAULT_CONFIDENCE_THRESHOLD}."
-                )
-                self.confidence_threshold = DEFAULT_CONFIDENCE_THRESHOLD
+            self.confidence_threshold = validate_confidence_threshold(
+                confidence_threshold,
+                default=DEFAULT_CONFIDENCE_THRESHOLD,
+                source_name="explicit confidence_threshold",
+            )
+        elif has_app_context() and "PREDICTION_CONFIDENCE_THRESHOLD" in current_app.config:
+            self.confidence_threshold = validate_confidence_threshold(
+                current_app.config["PREDICTION_CONFIDENCE_THRESHOLD"],
+                default=DEFAULT_CONFIDENCE_THRESHOLD,
+                source_name="app.config['PREDICTION_CONFIDENCE_THRESHOLD']",
+            )
         else:
-            self.confidence_threshold = DEFAULT_CONFIDENCE_THRESHOLD
+            self.confidence_threshold = validate_confidence_threshold(
+                os.getenv("PREDICTION_CONFIDENCE_THRESHOLD"),
+                default=DEFAULT_CONFIDENCE_THRESHOLD,
+                source_name="PREDICTION_CONFIDENCE_THRESHOLD",
+            )
 
         self.device = device or os.getenv("PREDICTOR_DEVICE", DEFAULT_DEVICE)
         self.guidance_service = guidance_service or GuidanceService()
