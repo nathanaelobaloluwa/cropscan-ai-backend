@@ -1,0 +1,215 @@
+import pytest
+from app.services.guidance import GuidanceService
+
+
+@pytest.fixture
+def guidance_service():
+    """Provides a fresh GuidanceService instance."""
+    return GuidanceService()
+
+
+class TestGuidanceService:
+    """Automated tests for GuidanceService and the Disease Knowledge Base."""
+
+    # 1. Class-Index Resolution
+    def test_class_indices_count(self, guidance_service):
+        """Verify the service loaded all 38 verified model classes."""
+        assert guidance_service.total_model_classes == 38
+
+    def test_class_index_resolution(self, guidance_service):
+        """Verify that known class indices resolve correctly."""
+        # Index 7 -> Corn (Maize) with Cercospora and Gray Leaf Spot
+        assert guidance_service.get_class_label(7) == "Corn (Maize) with Cercospora and Gray Leaf Spot"
+        assert guidance_service.get_class_label("7") == "Corn (Maize) with Cercospora and Gray Leaf Spot"
+
+        # Index 15 -> Orange with Citrus Greening
+        assert guidance_service.get_class_label(15) == "Orange with Citrus Greening"
+
+        # Index 29 -> Tomato with Early Blight
+        assert guidance_service.get_class_label(29) == "Tomato with Early Blight"
+
+        # Index 37 -> Healthy Tomato Plant
+        assert guidance_service.get_class_label(37) == "Healthy Tomato Plant"
+
+    # 2. English & Yoruba Retrieval
+    def test_english_guidance_retrieval(self, guidance_service):
+        """Verify retrieval of valid English guidance records."""
+        result = guidance_service.get_guidance_by_index(29, lang="en")
+
+        assert result["status"] == "success"
+        assert result["language"] == "en"
+        assert result["model_class_id"] == "Tomato with Early Blight"
+        assert result["is_healthy"] is False
+
+        data = result["data"]
+        assert data is not None
+        assert data["crop"] == "Tomato"
+        assert data["display_name"] == "Early Blight"
+        assert data["scientific_name"] == "Alternaria solani"
+        assert data["disease_id"] == "tomato_early_blight"
+        assert len(data["symptoms"]) > 0
+        assert len(data["treatment"]) > 0
+        assert len(data["prevention"]) > 0
+        assert data["expert_review_required"] is True
+        assert len(data["sources"]) > 0
+
+    def test_yoruba_guidance_retrieval(self, guidance_service):
+        """Verify retrieval of valid Yoruba guidance records."""
+        result = guidance_service.get_guidance_by_index(29, lang="yo")
+
+        assert result["status"] == "success"
+        assert result["language"] == "yo"
+        assert result["model_class_id"] == "Tomato with Early Blight"
+        assert result["is_healthy"] is False
+
+        data = result["data"]
+        assert data is not None
+        assert "Tòmátò" in data["crop"]
+        assert "Early Blight" in data["display_name"]
+        assert data["disease_id"] == "tomato_early_blight"
+        assert data["expert_review_required"] is True
+        assert data["translation_review_status"] == "draft_translation_pending_native_expert_review"
+        assert len(data["sources"]) > 0
+
+    # 3. Missing Records & Invalid Indices
+    def test_invalid_class_index_out_of_bounds(self, guidance_service):
+        """Verify handling of class indices outside the 0-37 range."""
+        result = guidance_service.get_guidance_by_index(99, lang="en")
+
+        assert result["status"] == "invalid_class_index"
+        assert result["data"] is None
+        assert result["is_healthy"] is None
+        assert "invalid" in result["message"].lower()
+
+    def test_invalid_class_index_negative(self, guidance_service):
+        """Verify handling of negative class indices."""
+        result = guidance_service.get_guidance_by_index(-1, lang="yo")
+
+        assert result["status"] == "invalid_class_index"
+        assert result["data"] is None
+        assert result["is_healthy"] is None
+        assert result["language"] == "yo"
+
+    # 4. Required Data Fields & Language Consistency
+    def test_language_dataset_consistency(self, guidance_service):
+        """Verify identical keys and shared schema between EN and YO datasets."""
+        en_keys = set(guidance_service._disease_info_en.keys())
+        yo_keys = set(guidance_service._disease_info_yo.keys())
+
+        # English and Yoruba must cover the exact same set of classes
+        assert en_keys == yo_keys
+        assert len(en_keys) == 20
+
+        required_fields = {
+            "disease_id",
+            "model_class_id",
+            "crop",
+            "display_name",
+            "scientific_name",
+            "status",
+            "severity",
+            "description",
+            "symptoms",
+            "treatment",
+            "prevention",
+            "expert_review_required",
+            "translation_review_status",
+            "sources",
+        }
+
+        for model_class in en_keys:
+            en_record = guidance_service._disease_info_en[model_class]
+            yo_record = guidance_service._disease_info_yo[model_class]
+
+            assert required_fields.issubset(en_record.keys()), f"Missing fields in EN for {model_class}"
+            assert required_fields.issubset(yo_record.keys()), f"Missing fields in YO for {model_class}"
+
+            # disease_id and model_class_id must match across languages
+            assert en_record["disease_id"] == yo_record["disease_id"]
+            assert en_record["model_class_id"] == yo_record["model_class_id"]
+            assert en_record["status"] == yo_record["status"]
+
+            # Must require expert review
+            assert en_record["expert_review_required"] is True
+            assert yo_record["expert_review_required"] is True
+
+            # Yoruba records must explicitly flag draft translation status
+            assert yo_record["translation_review_status"] == "draft_translation_pending_native_expert_review"
+
+            # Both must cite traceable agricultural sources
+            assert len(en_record["sources"]) > 0
+            assert len(yo_record["sources"]) > 0
+
+    # 5. Supported-Crop Scope Verification
+    def test_supported_crop_scope(self, guidance_service):
+        """Verify that Maize, Tomato, Pepper, Citrus, and Potato are present."""
+        supported_classes = guidance_service.supported_guidance_classes
+
+        # Maize (4 classes)
+        assert "Corn (Maize) with Cercospora and Gray Leaf Spot" in supported_classes
+        assert "Corn (Maize) with Common Rust" in supported_classes
+        assert "Corn (Maize) with Northern Leaf Blight" in supported_classes
+        assert "Healthy Corn (Maize) Plant" in supported_classes
+
+        # Citrus (1 class)
+        assert "Orange with Citrus Greening" in supported_classes
+
+        # Bell Pepper (2 classes)
+        assert "Bell Pepper with Bacterial Spot" in supported_classes
+        assert "Healthy Bell Pepper Plant" in supported_classes
+
+        # Potato (3 classes)
+        assert "Potato with Early Blight" in supported_classes
+        assert "Potato with Late Blight" in supported_classes
+        assert "Healthy Potato Plant" in supported_classes
+
+        # Tomato (10 classes)
+        assert "Tomato with Bacterial Spot" in supported_classes
+        assert "Tomato with Early Blight" in supported_classes
+        assert "Tomato with Late Blight" in supported_classes
+        assert "Tomato with Leaf Mold" in supported_classes
+        assert "Tomato with Septoria Leaf Spot" in supported_classes
+        assert "Tomato with Spider Mites or Two-spotted Spider Mite" in supported_classes
+        assert "Tomato with Target Spot" in supported_classes
+        assert "Tomato Yellow Leaf Curl Virus" in supported_classes
+        assert "Tomato Mosaic Virus" in supported_classes
+        assert "Healthy Tomato Plant" in supported_classes
+
+    def test_cassava_and_yam_are_not_present(self, guidance_service):
+        """Confirm that cassava and yam are NOT present in the model or guidance."""
+        for label in guidance_service._class_indices.values():
+            assert "cassava" not in label.lower()
+            assert "yam" not in label.lower()
+
+        for label in guidance_service.supported_guidance_classes:
+            assert "cassava" not in label.lower()
+            assert "yam" not in label.lower()
+
+    # 6. Safe Fallback Behavior
+    def test_recognized_class_without_guidance_fallback(self, guidance_service):
+        """
+        Verify that a class recognized by the model that has no guidance record yet
+        (e.g., Apple Scab) returns a safe fallback and NEVER claims the image is healthy.
+        """
+        # Index 0 is "Apple Scab", recognized by model but outside Nigerian staple scope
+        result = guidance_service.get_guidance_by_index(0, lang="en")
+
+        assert result["status"] == "recognized_unsupported_crop"
+        assert result["model_class_id"] == "Apple Scab"
+        assert result["data"] is None
+        # MUST NEVER claim healthy
+        assert result["is_healthy"] is False
+        assert "Nigerian staple crops" in result["message"] or "consult" in result["message"].lower()
+
+    def test_unreliable_assessment_fallback(self, guidance_service):
+        """Verify that an unreliable assessment never claims healthy."""
+        result_en = guidance_service.get_unreliable_assessment_fallback(lang="en")
+        assert result_en["status"] == "unreliable_assessment"
+        assert result_en["is_healthy"] is None
+        assert result_en["data"] is None
+        assert "reliably" in result_en["message"].lower()
+
+        result_yo = guidance_service.get_unreliable_assessment_fallback(lang="yo")
+        assert result_yo["status"] == "unreliable_assessment"
+        assert result_yo["is_healthy"] is None
+        assert result_yo["language"] == "yo"

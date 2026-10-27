@@ -1,0 +1,635 @@
+{
+  "Corn (Maize) with Cercospora and Gray Leaf Spot": {
+    "disease_id": "corn_gray_leaf_spot",
+    "model_class_id": "Corn (Maize) with Cercospora and Gray Leaf Spot",
+    "crop": "Àgbàdo (Maize)",
+    "display_name": "Àrùn Ààmì Ewé Àgbàdo (Gray Leaf Spot)",
+    "scientific_name": "Cercospora zeae-maydis",
+    "status": "diseased",
+    "severity": "moderate_to_high",
+    "description": "Àrùn egbòogi fungus tó máa ń kọlu ewé àgbàdo nígbà tí ojú-ọjọ́ bá gbiná tí ọ̀rinrin sì pọ̀, tó ń fa àmì onígun mẹ́rin lára ewé.",
+    "symptoms": [
+      "Àmì pẹlẹbẹ aláwọ̀ ilẹ̀ tí ó wá ń gùn di onígun mẹ́rin láàárín iṣan ewé",
+      "Àmì náà wà láàárín iṣan ewé pẹ̀lú etí tó tọ́ rẹ́rẹ́",
+      "Àwọn ewé ìsàlẹ̀ ń gbẹ kí wọ́n sì kú kí àkókò tó tó"
+    ],
+    "treatment": [
+      "Kan sí òṣìṣẹ́ àgbẹ̀ agbègbè rẹ (extension officer) láti mọ ìwọ̀n àrùn náà kí o tó lo oògùn kankan.",
+      "Yẹra fún rírìn tàbí ṣiṣẹ́ nínú oko nígbà tí omi òjò bá wà lára ewé kí àrùn má baà tàn.",
+      "Kó àwọn èròjà ewé tó ti ní àrùn kúrò ní oko kékeré lẹ́yìn ìkórè."
+    ],
+    "prevention": [
+      "Gbin irúgbìn àgbàdo tí a fọwọ́sí pé ó lè dènà àrùn ní agbègbè rẹ.",
+      "Yí irúgbìn padà pẹ̀lú àwọn ẹ̀wà (bíi ẹ̀wà tàbí sọ́yà) láti dá àrùn náà dúró nínú ilẹ̀.",
+      "Fi ààyè tó tọ́ sí àárín àwọn igi àgbàdo kí afẹ́fẹ́ lè gba àárín wọn dáradára."
+    ],
+    "expert_review_required": true,
+    "translation_review_status": "draft_translation_pending_native_expert_review",
+    "sources": [
+      "CIMMYT - Maize Diseases Field Guide",
+      "IITA - Research Guide: Maize Pathology"
+    ]
+  },
+  "Corn (Maize) with Common Rust": {
+    "disease_id": "corn_common_rust",
+    "model_class_id": "Corn (Maize) with Common Rust",
+    "crop": "Àgbàdo (Maize)",
+    "display_name": "Àrùn Èérún Àgbàdo (Common Rust)",
+    "scientific_name": "Puccinia sorghi",
+    "status": "diseased",
+    "severity": "moderate",
+    "description": "Àrùn fungus tí afẹ́fẹ́ ń gbé kiri, tó ń yọ bí ẹ̀tù aláwọ̀ ilẹ̀ pupa lórí àti abẹ́ ewé àgbàdo.",
+    "symptoms": [
+      "Àmì kéékèèké roboto aláwọ̀ ilẹ̀ pupa tí ó fọ́n ká orí àti abẹ́ ewé",
+      "Àmì náà ń bẹ́ tó sì ń tú ẹ̀tù pupa jáde sí orí ewé",
+      "Ewé náà ń yí padà sí pọ́n tó sì ń gbẹ"
+    ],
+    "treatment": [
+      "Béèrè lọ́wọ́ àwọn òṣìṣẹ́ àgbẹ̀ fún ìtọ́sọ́nà tí àmì náà bá ti pọ̀ jù kí àgbàdo tó yọ ìtànná.",
+      "Tọ́jú ilẹ̀ pẹ̀lú oúnjẹ ọ̀gbìn tó péye láti fún igi lágbára.",
+      "Yẹra fún fífún omi sí orí ewé níbi tí ó bá ti ṣeé ṣe."
+    ],
+    "prevention": [
+      "Gbin irúgbìn àgbàdo tí ó lè kojú àrùn èérún ní agbègbè rẹ.",
+      "Tẹ̀lé àkókò ìgbìn tí àwọn onímọ̀ àgbẹ̀ dámọ̀ràn láti yẹra fún àkókò tí àrùn ń wọ́pọ̀.",
+      "Mú oko mọ́ tónítóní kí o sì yọ koríko búburú kúrò ní etí oko."
+    ],
+    "expert_review_required": true,
+    "translation_review_status": "draft_translation_pending_native_expert_review",
+    "sources": [
+      "CIMMYT - Maize Diseases: A Guide for Field Identification",
+      "FAO - Integrated Pest Management for Maize"
+    ]
+  },
+  "Corn (Maize) with Northern Leaf Blight": {
+    "disease_id": "corn_northern_leaf_blight",
+    "model_class_id": "Corn (Maize) with Northern Leaf Blight",
+    "crop": "Àgbàdo (Maize)",
+    "display_name": "Àrùn Ìjóná Ewé Àgbàdo (Northern Leaf Blight)",
+    "scientific_name": "Exserohilum turcicum",
+    "status": "diseased",
+    "severity": "high",
+    "description": "Àrùn fungus tó le gan-an, tó ń mú kí ewé àgbàdo ní àmì gígùn bí sìgá tó sì ń pa ewé lójú ẹsẹ̀.",
+    "symptoms": [
+      "Àmì gígùn tó fẹ̀ bí sìgá (sẹ́ntímítà 2.5 sí 15) lára ewé",
+      "Àmì náà ń bẹ̀rẹ̀ pẹ̀lú àwọ̀ ewéko tó sì ń di aláwọ̀ ilẹ̀ lẹ́yìn náà",
+      "Ewé púpọ̀ máa ń kú nígbà tí àwọn àmì náà bá pàdé pọ̀"
+    ],
+    "treatment": [
+      "Pe àwọn onímọ̀ àgbẹ̀ láti wá wo oko kí àgbàdo tó bẹ̀rẹ̀ sí ní yọ irun.",
+      "Yẹra fún fífún omi sí orí ewé nígbà tí ojú-ọjọ́ bá gbiná tó sì tutù.",
+      "Kó ewé tó ti ní àrùn kúrò kí o sì sùn wọ́n lẹ́yìn ìkórè ní oko kékeré."
+    ],
+    "prevention": [
+      "Gbin irúgbìn àgbàdo tí ilé-iṣẹ́ irúgbìn fọwọ́sí pé ó lè dènà àrùn.",
+      "Yí irúgbìn padà fún ó kéré tán ọdún méjì pẹ̀lú àwọn ohun ọ̀gbìn mìíràn yàtọ̀ sí àgbàdo (bíi ẹ̀wà, sọ́yà, tàbí ẹ̀pà).",
+      "Tú ilẹ̀ dáradára kí àwọn ìdọ̀tí oko àtijọ́ lè jẹrà sábẹ́ ilẹ̀."
+    ],
+    "expert_review_required": true,
+    "translation_review_status": "draft_translation_pending_native_expert_review",
+    "sources": [
+      "IITA - Maize Production Manual",
+      "CIMMYT - Field Guide to Maize Diseases"
+    ]
+  },
+  "Healthy Corn (Maize) Plant": {
+    "disease_id": "healthy_corn",
+    "model_class_id": "Healthy Corn (Maize) Plant",
+    "crop": "Àgbàdo (Maize)",
+    "display_name": "Àgbàdo Aláàlááfíà (Healthy Maize)",
+    "scientific_name": "Zea mays (Healthy)",
+    "status": "healthy",
+    "severity": "none",
+    "description": "Kò sí àmì àrùn kankan lórí ewé. Ewé náà jẹ́ ewéko tútù tó dán tó sì ń dàgbà dáradára.",
+    "symptoms": [
+      "Ewé aláwọ̀ ewéko tútù tó péye tí kò ní àmì, ẹ̀tù, tàbí ìjóná",
+      "Etí ewé tó dán àti igi tó dúró ṣinṣin",
+      "Ojú ewé mọ́ tónítóní láìsí egbòogi fungus kankan"
+    ],
+    "treatment": [
+      "Kò nílò ìtọ́jú àrùn kankan.",
+      "Máa ṣe àyẹ̀wò oko déédéé ní gbogbo ọjọ́ méje sí mẹ́wàá láti tètè rí egbò tàbí kòkòrò."
+    ],
+    "prevention": [
+      "Tẹ̀síwájú nínú ìtọ́jú oko tó dára, bíi ríro oko lásìkò àti fífún un ní ajílẹ̀ tó péye.",
+      "Ríi dájú pé omi kò dúró sí orí oko láti dènà ìbàjẹ́ gbongbo.",
+      "Tètè sọ fún àwọn òṣìṣẹ́ àgbẹ̀ tí o bá ṣàkíyèsí àyípadà àwọ̀ ewé kankan."
+    ],
+    "expert_review_required": true,
+    "translation_review_status": "draft_translation_pending_native_expert_review",
+    "sources": [
+      "IITA - Good Agricultural Practices (GAP) for Maize",
+      "FAO - Crop Management Guidelines"
+    ]
+  },
+  "Orange with Citrus Greening": {
+    "disease_id": "citrus_greening",
+    "model_class_id": "Orange with Citrus Greening",
+    "crop": "Ọsàn (Orange)",
+    "display_name": "Àrùn Ọsàn Dídúró Ní Tútù (Citrus Greening)",
+    "scientific_name": "Candidatus Liberibacter spp.",
+    "status": "diseased",
+    "severity": "critical",
+    "description": "Àrùn bakitéríà eléwu púpọ̀ tí kòkòrò ń fọ́n ká lórí igi ọsàn, tó ń mú kí ewé mọ́ lẹ́sẹẹsẹ tí kò dọ́gba, tí èso sì ń kéré tó sì ń korò.",
+    "symptoms": [
+      "Àwọ̀ pọ́n àti ewéko tútù tó dàpọ̀ láì dọ́gba lára ewé láì tẹ̀lé iṣan ewé",
+      "Iṣan ewé ń yí sí pọ́n kí ẹ̀ka igi tó bẹ̀rẹ̀ sí ní gbẹ",
+      "Èso ọsàn ń kéré, kò dọ́gba, ó sì ń wà ní tútù ní ìsàlẹ̀ pẹ̀lú adùn kíkorò",
+      "Àwọn ẹ̀ka igi kéékèèké ń gbẹ tí igi náà sì ń dínkù ní agbára"
+    ],
+    "treatment": [
+      "Kíákíá, sọ fún àwọn aláṣẹ àgbẹ̀ tàbí òṣìṣẹ́ àgbẹ̀ agbègbè rẹ tí o bá fura sí àrùn yìí.",
+      "Kò tíì sí oògùn tó lè wo igi tó ti ní àrùn yìí sàn; a gbọ́dọ̀ hú igi náà kí a sì pa á run láti dáàbò bo àwọn igi yòókù.",
+      "Má ṣe gbé ẹ̀ka igi tàbí irúgbìn ọsàn kúrò ní agbègbè tó ti ní àrùn náà."
+    ],
+    "prevention": [
+      "Gbin àwọn irúgbìn ọsàn tí wọ́n ti fọwọ́sí pé wọn kò ní àrùn láti ọ̀dọ̀ àwọn agbẹ̀gbìn tó dájú.",
+      "Ṣe àyẹ̀wò oko déédéé fún kòkòrò psyllid tó ń gbé àrùn náà kiri.",
+      "Tẹ̀lé ìtọ́sọ́nà àwọn òṣìṣẹ́ àgbẹ̀ nípa bí a ṣe ń kápá àwọn kòkòrò wọ̀nyí."
+    ],
+    "expert_review_required": true,
+    "translation_review_status": "draft_translation_pending_native_expert_review",
+    "sources": [
+      "FAO - Citrus Greening Technical Manual",
+      "EPPO / IITA - Citrus Health Briefs"
+    ]
+  },
+  "Bell Pepper with Bacterial Spot": {
+    "disease_id": "pepper_bacterial_spot",
+    "model_class_id": "Bell Pepper with Bacterial Spot",
+    "crop": "Ata Tàtàṣé (Bell Pepper)",
+    "display_name": "Àrùn Bakitéríà Ewé Ata (Bacterial Spot)",
+    "scientific_name": "Xanthomonas spp.",
+    "status": "diseased",
+    "severity": "high",
+    "description": "Àrùn bakitéríà tó máa ń pọ̀ sí i nígbà tí ooru àti òjò bá pọ̀, tó ń fa àmì omi lára ewé àti egbò lára èso ata.",
+    "symptoms": [
+      "Àmì kéékèèké bí omi lára ewé tó ń yí padà sí dúdú pẹ̀lú àyíká tó fẹ́ pọ́n",
+      "Ewé lè sán tàbí kí àmì náà jábọ́, kí ewé dàbí èyí tí a fa ya",
+      "Ewé púpọ̀ máa ń jábọ́ kúrò lára igi, èyí sì ń jẹ́ kí oòrùn pa èso ata",
+      "Àmì egbò gíga tó rí kùrukùru lórí èso ata"
+    ],
+    "treatment": [
+      "Yẹra fún fífún omi sí orí ewé; bu omi sí ìdí igi tààrà láti dènà títàn bakitéríà.",
+      "Má ṣe ṣiṣẹ́ tàbí ro oko nígbà tí ewé bá tutù pẹ̀lú òjò tàbí ìrì.",
+      "Kó àwọn ewé tó ti bàjẹ́ kúrò nínú oko kí o sì sọ wọ́n nù sí ibi tó jìn."
+    ],
+    "prevention": [
+      "Lo irúgbìn tí wọ́n fọwọ́sí pé kò ní àrùn tàbí irúgbìn tí wọ́n ti tọ́jú pẹ̀lú omi gbígbóná.",
+      "Yan irúgbìn ata tó lè kojú àrùn náà tí ó bá wà ní agbègbè rẹ.",
+      "Yí irúgbìn padà kúrò lórí ata, tòmátò, tàbí anàmọ́ fún ó kéré tán ọdún méjì.",
+      "Fọ àwọn igi ìtìlẹ́yìn àti irinṣẹ́ oko pẹ̀lú omi tó mọ́ kí o tó tún lò wọ́n."
+    ],
+    "expert_review_required": true,
+    "translation_review_status": "draft_translation_pending_native_expert_review",
+    "sources": [
+      "WorldVeg - Pepper Diseases and Management",
+      "FAO - Integrated Pest Management for Solanaceous Crops"
+    ]
+  },
+  "Healthy Bell Pepper Plant": {
+    "disease_id": "healthy_pepper",
+    "model_class_id": "Healthy Bell Pepper Plant",
+    "crop": "Ata Tàtàṣé (Bell Pepper)",
+    "display_name": "Ata Tàtàṣé Aláàlááfíà (Healthy Bell Pepper)",
+    "scientific_name": "Capsicum annuum (Healthy)",
+    "status": "healthy",
+    "severity": "none",
+    "description": "Kò sí àmì àrùn kankan lórí ewé ata. Ewé náà jẹ́ tútù, ó dán, ó sì ń dàgbà pẹ̀lú agbára.",
+    "symptoms": [
+      "Ewé tó mọ́, tó dán láìsí àmì, egbò, tàbí kíkálọ́wọ́",
+      "Igi tó lágbára pẹ̀lú ẹ̀ka tó gún régé",
+      "Ìtànná àti èso ata tó dára láìsí àbàwọ́n lórí awọ wọn"
+    ],
+    "treatment": [
+      "Kò nílò ìtọ́jú kankan.",
+      "Tẹ̀síwájú láti máa wo oko lẹ́ẹ̀kan lọ́sẹ̀ fún àwọn kòkòrò tàbí àmì àrùn."
+    ],
+    "prevention": [
+      "Ríi dájú pé ilẹ̀ tutù déédéé láì jẹ́ kí omi dúró ní ìdí igi.",
+      "Tẹ koríko tàbí ewé gbígbẹ sí ìdí igi láti pa ọ̀rinrin mọ́ àti láti dènà erùpẹ̀ láti fọ́n sí ewé.",
+      "Fún ọ̀gbìn ní oúnjẹ ilẹ̀ tó péye láì ṣe àṣejù ajílẹ̀ nitrogen."
+    ],
+    "expert_review_required": true,
+    "translation_review_status": "draft_translation_pending_native_expert_review",
+    "sources": [
+      "WorldVeg - Sweet Pepper Production Guide",
+      "IITA - Vegetable Guide"
+    ]
+  },
+  "Potato with Early Blight": {
+    "disease_id": "potato_early_blight",
+    "model_class_id": "Potato with Early Blight",
+    "crop": "Ànàmọ́ Gẹ̀ẹ́sì / Pọtétò (Potato)",
+    "display_name": "Àrùn Èérún Pọtétò (Early Blight)",
+    "scientific_name": "Alternaria solani",
+    "status": "diseased",
+    "severity": "moderate_to_high",
+    "description": "Àrùn fungus tó wọ́pọ̀ lórí pọtétò, tó ń fa àmì roboto dúdú tó ní àyíká bí àfojúsùn lórí àwọn ewé ìsàlẹ̀.",
+    "symptoms": [
+      "Àmì dúdú tó ní àyíká roboto bí àfojúsùn lórí àwọn ewé tó ti gbó",
+      "Àwọ̀ pọ́n yí àmì náà ká lórí ewé",
+      "Ewé náà ń gbẹ tó sì ń jábọ́ nígbà tí àmì náà bá ń tóbí sí i"
+    ],
+    "treatment": [
+      "Kan sí àwọn òṣìṣẹ́ àgbẹ̀ fún ìtọ́sọ́nà tó tọ́ ní agbègbè rẹ.",
+      "Já àwọn ewé ìsàlẹ̀ tó ti ní àrùn dànù ní oko kékeré.",
+      "Bu omi sí ilẹ̀ ní kùtùkùtù òwúrọ̀ kí ewé lè tètè gbẹ ní ọ̀sán."
+    ],
+    "prevention": [
+      "Gbin àwọn irúgbìn pọtétò tí wọ́n fọwọ́sí pé wọn kò ní àrùn.",
+      "Yí irúgbìn padà pẹ̀lú àgbàdo tàbí ẹ̀wà fún ọdún méjì sí mẹ́ta.",
+      "Tọ́jú oúnjẹ ọ̀gbìn dáradára, pàápàá nitrogen àti potassium.",
+      "Pa àwọn igi pọtétò àtijọ́ tó hù fúnra wọn run nítòsí oko."
+    ],
+    "expert_review_required": true,
+    "translation_review_status": "draft_translation_pending_native_expert_review",
+    "sources": [
+      "International Potato Center (CIP) - Potato Pathology Manual",
+      "FAO - Integrated Pest Management for Potato"
+    ]
+  },
+  "Potato with Late Blight": {
+    "disease_id": "potato_late_blight",
+    "model_class_id": "Potato with Late Blight",
+    "crop": "Ànàmọ́ Gẹ̀ẹ́sì / Pọtétò (Potato)",
+    "display_name": "Àrùn Ìjóná Pọtétò (Late Blight)",
+    "scientific_name": "Phytophthora infestans",
+    "status": "diseased",
+    "severity": "critical",
+    "description": "Àrùn eléwu púpọ̀ tó ń jẹ́ kí ewé, igi, àti kùkùndùkù pọtétò bàjẹ́ lójú ẹsẹ̀ nígbà tí ojú-ọjọ́ bá tutù tí ọ̀rinrin sì pọ̀.",
+    "symptoms": [
+      "Àmì tútù bí omi tó ń yí sí dúdú lórí ewé àti igi",
+      "Èfúfú funfun bí owú lábẹ́ ewé nígbà tí òjò tàbí ìrì bá pọ̀",
+      "Ewé ń rẹ̀ dànù tí igi náà sì ń jẹrà láàárín ọjọ́ díẹ̀",
+      "Kùkùndùkù inú ilẹ̀ ń rà tó sì ń di aláwọ̀ ilẹ̀ lábẹ́ awọ rẹ̀"
+    ],
+    "treatment": [
+      "Kíákíá, sọ fún àwọn òṣìṣẹ́ àgbẹ̀ tí o bá rí àmì àrùn yìí.",
+      "Pa àwọn igi tó ti ní àrùn run lẹ́sẹ̀kẹsẹ̀ kí afẹ́fẹ́ má baà gbé e lọ sí oko mìíràn.",
+      "Yẹra fún fífún omi sí orí ewé, má sì ṣe fọ pọtétò tí a kórè láti inú oko tó ní àrùn."
+    ],
+    "prevention": [
+      "Gbin àwọn irúgbìn pọtétò tó lè kojú àrùn late blight.",
+      "Kó erùpẹ̀ ilẹ̀ bò ìdí igi dáradára kí àrùn má baà wọ inú kùkùndùkù lọ.",
+      "Pa gbogbo kùkùndùkù tó kù sínú ilẹ̀ run kí àsìkò ìgbìn tuntun tó dé.",
+      "Má ṣe fi pọtétò oko tó ní àrùn pamọ́ fún irúgbìn."
+    ],
+    "expert_review_required": true,
+    "translation_review_status": "draft_translation_pending_native_expert_review",
+    "sources": [
+      "International Potato Center (CIP) - Late Blight Management Guide",
+      "FAO - Potato Pest and Disease Compendium"
+    ]
+  },
+  "Healthy Potato Plant": {
+    "disease_id": "healthy_potato",
+    "model_class_id": "Healthy Potato Plant",
+    "crop": "Ànàmọ́ Gẹ̀ẹ́sì / Pọtétò (Potato)",
+    "display_name": "Pọtétò Aláàlááfíà (Healthy Potato)",
+    "scientific_name": "Solanum tuberosum (Healthy)",
+    "status": "healthy",
+    "severity": "none",
+    "description": "Kò sí àmì àrùn kankan lórí ewé. Ewé náà ní àwọ̀ tútù tó dán dáradára.",
+    "symptoms": [
+      "Ewé tó kún, tó dán, tó sì ní àwọ̀ tútù láìsí àbàwọ́n",
+      "Igi tó dúró ṣinṣin láìsí egbò dúdú",
+      "Gbongbo àti kùkùndùkù tó ń dàgbà dáradára láìsí ìbàjẹ́"
+    ],
+    "treatment": [
+      "Kò nílò ìtọ́jú kankan.",
+      "Máa wo oko lẹ́ẹ̀kan lọ́sẹ̀, pàápàá nígbà tí òjò bá ń rọ̀ tàbí tí ìrì bá pọ̀."
+    ],
+    "prevention": [
+      "Tẹ erùpẹ̀ ilẹ̀ mọ́ ìdí igi láti dáàbò bo èso lábẹ́ ilẹ̀ kúrò lójú oòrùn.",
+      "Ríi dájú pé ilẹ̀ tutù dáradára láìsí adágún omi.",
+      "Fọ àwọn irinṣẹ́ oko dáradára nígbà tí o bá ń kọjá láti oko kan sí òmíràn."
+    ],
+    "expert_review_required": true,
+    "translation_review_status": "draft_translation_pending_native_expert_review",
+    "sources": [
+      "International Potato Center (CIP) - Potato Production Guide",
+      "FAO - GAP for Root and Tuber Crops"
+    ]
+  },
+  "Tomato with Bacterial Spot": {
+    "disease_id": "tomato_bacterial_spot",
+    "model_class_id": "Tomato with Bacterial Spot",
+    "crop": "Tòmátò (Tomato)",
+    "display_name": "Àrùn Bakitéríà Ewé Tòmátò (Bacterial Spot)",
+    "scientific_name": "Xanthomonas spp.",
+    "status": "diseased",
+    "severity": "high",
+    "description": "Àrùn bakitéríà tó ń fa àmì kéékèèké bí omi lórí ewé, igi, àti èso tòmátò.",
+    "symptoms": [
+      "Àmì kéékèèké aláwọ̀ ilẹ̀ dúdú bí omi lára ewé àti igi",
+      "Àmì náà lè ní àyíká tó fẹ́ pọ́n tí ewé sì ń kálọ́wọ́",
+      "Ewé púpọ̀ máa ń gbẹ tí wọ́n sì ń jábọ́ kúrò lára igi",
+      "Àmì dúdú tó rí kùrukùru lórí èso tòmátò tútù"
+    ],
+    "treatment": [
+      "Já àwọn ewé tó ti ní àrùn kúrò ní oko kékeré; má ṣe ṣiṣẹ́ nígbà tí ewé bá tutù.",
+      "Béèrè lọ́wọ́ àwọn òṣìṣẹ́ àgbẹ̀ fún oògùn tó tọ́ tí àrùn náà bá pọ̀ jù.",
+      "Bu omi sí ilẹ̀ ìdí igi tààrà láti dènà erùpẹ̀ láti fọ́n sí ewé."
+    ],
+    "prevention": [
+      "Lo irúgbìn tí wọ́n ti fọwọ́sí pé kò ní àrùn láti ọ̀dọ̀ ilé-iṣẹ́ irúgbìn tó dájú.",
+      "Yí irúgbìn padà kúrò lórí tòmátò, ata, tàbí anàmọ́ fún ó kéré tán ọdún méjì.",
+      "Fọ àwọn àpótí, igi ìtìlẹ́yìn, àti àwọn irinṣẹ́ oko pẹ̀lú omi tó mọ́."
+    ],
+    "expert_review_required": true,
+    "translation_review_status": "draft_translation_pending_native_expert_review",
+    "sources": [
+      "World Vegetable Center (WorldVeg) - Tomato Disease Management",
+      "FAO - Integrated Pest Management for Tomato"
+    ]
+  },
+  "Tomato with Early Blight": {
+    "disease_id": "tomato_early_blight",
+    "model_class_id": "Tomato with Early Blight",
+    "crop": "Tòmátò (Tomato)",
+    "display_name": "Àrùn Èérún Tòmátò (Early Blight)",
+    "scientific_name": "Alternaria solani",
+    "status": "diseased",
+    "severity": "moderate_to_high",
+    "description": "Àrùn fungus tó máa ń bẹ̀rẹ̀ lára àwọn ewé ìsàlẹ̀ pẹ̀lú àmì roboto dúdú tó ní àyíká bí àfojúsùn, tó sì ń mú kí ewé pọ́n tí ó sì ń jábọ́.",
+    "symptoms": [
+      "Àmì dúdú tó ní àyíká bí àfojúsùn tafàtafà lórí àwọn ewé ìsàlẹ̀",
+      "Àyíká àmì náà ń yí padà sí pọ́n",
+      "Ewé ìsàlẹ̀ ń gbẹ kí wọ́n sì jábọ́ sílẹ̀ lẹ́sẹẹsẹ",
+      "Àmì dúdú tó jìn sínú lára èso tòmátò lẹ́bàá orí rẹ̀"
+    ],
+    "treatment": [
+      "Já àwọn ewé tó ti ní àrùn dànù kúrò ní oko lẹ́sẹ̀kẹsẹ̀; má ṣe lò wọ́n fún ajílẹ̀.",
+      "Bu omi sí ìdí igi tààrà; yẹra fún fífún omi sí orí ewé.",
+      "Kan sí àwọn òṣìṣẹ́ àgbẹ̀ fún ìtọ́sọ́nà lórí àwọn ọ̀nà àbójútó tó péye."
+    ],
+    "prevention": [
+      "Yí irúgbìn padà lẹ́yìn ọdún méjì sí mẹ́ta (má gbin tòmátò sí ibi tí ata tàbí anàmọ́ ti wà tẹ́lẹ̀).",
+      "Da koríko gbígbẹ bò ilẹ̀ ìdí igi láti dènà erùpẹ̀ ilẹ̀ láti fọ́n sí ewé nígbà tí òjò bá rọ̀.",
+      "Fi ààyè tó tó sẹ́ntímítà 50 sí 60 sí àárín àwọn igi tòmátò kí afẹ́fẹ́ lè gba àárín wọn dáradára.",
+      "Di igi tòmátò mọ́ òpó láti gbé àwọn ewé ga kúrò lórí ilẹ̀."
+    ],
+    "expert_review_required": true,
+    "translation_review_status": "draft_translation_pending_native_expert_review",
+    "sources": [
+      "IITA - Tomato Production Manual",
+      "WorldVeg - Integrated Disease Management in Tomato"
+    ]
+  },
+  "Tomato with Late Blight": {
+    "disease_id": "tomato_late_blight",
+    "model_class_id": "Tomato with Late Blight",
+    "crop": "Tòmátò (Tomato)",
+    "display_name": "Àrùn Ìjóná Tòmátò (Late Blight)",
+    "scientific_name": "Phytophthora infestans",
+    "status": "diseased",
+    "severity": "critical",
+    "description": "Àrùn tó ń tàn kálẹ̀ kíákíá nígbà tí òtútù àti ọ̀rinrin bá pọ̀, tó ń pa gbogbo ewé, igi, àti èso tòmátò run láàárín ọjọ́ díẹ̀.",
+    "symptoms": [
+      "Àmì títóbi bí omi tó ń yí sí dúdú lára ewé àti igi",
+      "Èfúfú funfun bí owú lábẹ́ ewé ní kùtùkùtù òwúrọ̀ nígbà tí ìrì bá pọ̀",
+      "Igi tòmátò ń jóná tí ó sì ń kú tán pátápátá láàárín ọjọ́ díẹ̀",
+      "Àmì dúdú tó le lára èso tòmátò tútù àti èyí tó ti pọ́n"
+    ],
+    "treatment": [
+      "Fa àwọn igi tó ti ní àrùn tu lẹ́sẹ̀kẹsẹ̀ kí o sì sùn wọ́n tàbí bò wọ́n mọ́lẹ̀; má fi wọ́n sí orí oko.",
+      "Tètè sọ fún àwọn àgbẹ̀ tó wà nítòsí àti àwọn òṣìṣẹ́ àgbẹ̀ nítorí afẹ́fẹ́ máa ń gbé àrùn náà lọ sí oko mìíràn.",
+      "Yẹra pátápátá fún fífún omi sí orí ewé."
+    ],
+    "prevention": [
+      "Gbin àwọn irúgbìn tòmátò tó lè dènà àrùn níbi tí wọ́n bá ti wà.",
+      "Yẹra fún gígbin tòmátò lẹ́gbẹ̀ẹ́ oko pọtétò.",
+      "Fi ààyè tó fẹ̀ sí àárín àwọn igi kí o sì di wọ́n mọ́ òpó kí afẹ́fẹ́ lè fẹ́ gba àárín wọn.",
+      "Mú gbogbo ewé tòmátò àtijọ́ àti pọtétò tó bàjẹ́ kúrò ní àyíká oko."
+    ],
+    "expert_review_required": true,
+    "translation_review_status": "draft_translation_pending_native_expert_review",
+    "sources": [
+      "FAO - Integrated Pest Management for Tomato",
+      "IITA - Plant Health and Vegetable Guide"
+    ]
+  },
+  "Tomato with Leaf Mold": {
+    "disease_id": "tomato_leaf_mold",
+    "model_class_id": "Tomato with Leaf Mold",
+    "crop": "Tòmátò (Tomato)",
+    "display_name": "Àrùn Èérún Ìsàlẹ̀ Ewé (Leaf Mold)",
+    "scientific_name": "Passalora fulva",
+    "status": "diseased",
+    "severity": "moderate",
+    "description": "Àrùn fungus tó máa ń pọ̀ sí i níbi tí ọ̀rinrin bá pọ̀ sí jù tàbí nínú ilé-ìbòji ọ̀gbìn (greenhouse), tó ń yọ bí ẹ̀tù aláwọ̀ ewéko dúdú lábẹ́ ewé.",
+    "symptoms": [
+      "Àmì aláwọ̀ ewéko pọ́n lórí ewé tó ti gbó",
+      "Èfúfú bí ẹ̀tù aláwọ̀ olífì (olive-green) tó nípọn lábẹ́ ewé ní ibi tí àmì náà wà",
+      "Ewé ń kálọ́wọ́, ó ń gbẹ, ó sì ń jábọ́ sílẹ̀"
+    ],
+    "treatment": [
+      "Ṣí àwọn ilẹ̀kùn ilé-ìbòji kí afẹ́fẹ́ lè wọlé dáradára láti dín ọ̀rinrin kù.",
+      "Rẹ́ àwọn ewé ìsàlẹ̀ kúrò kí afẹ́fẹ́ lè máa gba àárín igi tòmátò.",
+      "Yẹra fún títu omi sí orí ewé nígbà tí o bá ń rin oko."
+    ],
+    "prevention": [
+      "Yan àwọn irúgbìn tòmátò tí wọ́n mọ̀ pé ó lè kojú àrùn leaf mold.",
+      "Fi ààyè tó tó sẹ́ntímítà 60 sí àárín àwọn igi tòmátò.",
+      "Fọ ilé-ìbòji ọ̀gbìn àti àwọn irinṣẹ́ mọ́ tónítóní láàárín àsìkò ìgbìn kọ̀ọ̀kan."
+    ],
+    "expert_review_required": true,
+    "translation_review_status": "draft_translation_pending_native_expert_review",
+    "sources": [
+      "WorldVeg - Tomato Disease Guide",
+      "FAO - Protected Agriculture Pest Management"
+    ]
+  },
+  "Tomato with Septoria Leaf Spot": {
+    "disease_id": "tomato_septoria_leaf_spot",
+    "model_class_id": "Tomato with Septoria Leaf Spot",
+    "crop": "Tòmátò (Tomato)",
+    "display_name": "Àrùn Ààmì Wẹ́wẹ́ Ewé (Septoria Leaf Spot)",
+    "scientific_name": "Septoria lycopersici",
+    "status": "diseased",
+    "severity": "moderate_to_high",
+    "description": "Àrùn fungus tó ń fa àmì roboto kéékèèké púpọ̀ pẹ̀lú etí dúdú àti àárín aláwọ̀ eérú lórí àwọn ewé ìsàlẹ̀ tòmátò.",
+    "symptoms": [
+      "Àmì kéékèèké roboto púpọ̀ (mìlímítà 1.5 sí 3) lórí àwọn ewé ìsàlẹ̀",
+      "Etí àmì náà jẹ́ aláwọ̀ ilẹ̀ dúdú pẹ̀lú àárín aláwọ̀ eérú tí ó ní àmì dúdú wẹ́wẹ́ nínú",
+      "Ewé ń yí sí pọ́n, wọ́n ń gbẹ, wọ́n sì ń jábọ́ láti ìsàlẹ̀ igi lọ sí òkè"
+    ],
+    "treatment": [
+      "Já àwọn ewé ìsàlẹ̀ tó ti ní àmì kúrò ní kíákíá tí o bá ti kọ́kọ́ rí wọn.",
+      "Bu omi sí ilẹ̀ ìdí igi nìkan láì jẹ́ kí omi fọ́n sí ewé.",
+      "Béèrè lọ́wọ́ àwọn òṣìṣẹ́ àgbẹ̀ fún ìtọ́sọ́nà tí ewé bá ti ń gbẹ jù."
+    ],
+    "prevention": [
+      "Yí irúgbìn padà kúrò lórí tòmátò tàbí ata fún ọdún méjì tàbí jù bẹ́ẹ̀ lọ.",
+      "Da koríko bò ilẹ̀ ìdí igi láti dènà erùpẹ̀ láti fọ́n àrùn sí ewé.",
+      "Di igi mọ́ òpó kí o sì tọ́jú rẹ̀ kí oòrùn àti afẹ́fẹ́ lè gba àárín ewé.",
+      "Kó gbogbo ìdọ̀tí ewé tòmátò kúrò lẹ́yìn ìkórè."
+    ],
+    "expert_review_required": true,
+    "translation_review_status": "draft_translation_pending_native_expert_review",
+    "sources": [
+      "IITA - Vegetable Guide: Disease Management",
+      "WorldVeg - Tomato Pathology Compendium"
+    ]
+  },
+  "Tomato with Spider Mites or Two-spotted Spider Mite": {
+    "disease_id": "tomato_spider_mites",
+    "model_class_id": "Tomato with Spider Mites or Two-spotted Spider Mite",
+    "crop": "Tòmátò (Tomato)",
+    "display_name": "Ìbàjẹ́ Kòkòrò Alántakùn (Spider Mites)",
+    "scientific_name": "Tetranychus urticae",
+    "status": "diseased",
+    "severity": "moderate_to_high",
+    "description": "Àwọn kòkòrò kéékèèké bí alántakùn tó ń mu omi ara ewé nígbà tí ooru àti ọ̀gbẹlẹ̀ bá pọ̀, tó ń fa àmì fẹ́lẹ́fẹ́lẹ́ àti òwú alántakùn lábẹ́ ewé.",
+    "symptoms": [
+      "Àmì funfun tàbí pọ́n wẹ́wẹ́ bí abẹ́rẹ́ lórí ewé",
+      "Òwú fẹ́lẹ́fẹ́lẹ́ bí ti alántakùn lábẹ́ ewé àti ní orí ẹ̀ka tuntun",
+      "Ewé ń yí sí aláwọ̀ idẹ tàbí pọ́n, wọ́n ń gbẹ, wọ́n sì ń jábọ́ nígbà tí kòkòrò bá pọ̀",
+      "Igi tòmátò kò ní dàgbà dáradára, èso rẹ̀ yóò sì kéré"
+    ],
+    "treatment": [
+      "Fún omi tó lágbára sí abẹ́ ewé láti gba àwọn kòkòrò náà dànù ní oko kékeré.",
+      "Dáàbò bo àwọn kòkòrò rere tó ń jẹ kòkòrò búburú wọ̀nyí nípa yíyẹra fún fífún oògùn kòkòrò láìnídìí.",
+      "Kan sí àwọn òṣìṣẹ́ àgbẹ̀ fún àwọn ọṣẹ tàbí òróró àkànṣe fún ọ̀gbìn tó bá tọ́."
+    ],
+    "prevention": [
+      "Yẹra fún kíkùnà láti rin oko, nítorí àwọn kòkòrò wọ̀nyí máa ń pọ̀ sí i nígbà tí ilẹ̀ bá gbẹ.",
+      "Yọ gbogbo koríko búburú kúrò ní etí oko.",
+      "Fi gilasi amú-nǹkan-tóbi (hand lens) wo abẹ́ ewé lẹ́ẹ̀kan lọ́sẹ̀ ní àsìkò ẹ̀rùn."
+    ],
+    "expert_review_required": true,
+    "translation_review_status": "draft_translation_pending_native_expert_review",
+    "sources": [
+      "FAO - Integrated Pest Management for Tomato",
+      "IITA - Insect Pests of Horticultural Crops"
+    ]
+  },
+  "Tomato with Target Spot": {
+    "disease_id": "tomato_target_spot",
+    "model_class_id": "Tomato with Target Spot",
+    "crop": "Tòmátò (Tomato)",
+    "display_name": "Àrùn Ààmì Àfojúsùn (Target Spot)",
+    "scientific_name": "Corynespora cassiicola",
+    "status": "diseased",
+    "severity": "moderate_to_high",
+    "description": "Àrùn fungus tó ń gbilẹ̀ níbi tí ooru àti ọ̀rinrin bá ti pọ̀, tó ń fa àmì roboto aláwọ̀ ilẹ̀ tí ó lè ní àyíká fẹ́lẹ́fẹ́lẹ́ bí àfojúsùn.",
+    "symptoms": [
+      "Àmì kéékèèké bí omi lórí ewé tòmátò",
+      "Àmì náà ń fẹ̀ di roboto aláwọ̀ ilẹ̀ pẹ̀lú àyíká tó ṣe kedere",
+      "Ewé ń pọ́n, wọ́n ń jóná, wọ́n sì ń jábọ́ sílẹ̀",
+      "Àmì aláwọ̀ ilẹ̀ lórí èso tòmátò tútù àti èyí tó ti pọ́n"
+    ],
+    "treatment": [
+      "Já àwọn ewé tó ti ní àrùn dànù ní oko kékeré.",
+      "Yọ àwọn ẹ̀ka kéékèèké tí kò nílò kúrò láti jẹ́ kí afẹ́fẹ́ wọlé dáradára.",
+      "Béèrè ìtọ́sọ́nà lọ́wọ́ àwọn òṣìṣẹ́ àgbẹ̀ tí àrùn náà bá ń tàn sókè."
+    ],
+    "prevention": [
+      "Yí irúgbìn padà kúrò lórí tòmátò, ata, àti gbogbo ohun ọ̀gbìn tó jọ mọ́ wọn.",
+      "Di igi mọ́ òpó kí o sì fi ààyè tó tó sẹ́ntímítà 50 sí 60 sí àárín wọn.",
+      "Yẹra fún fífún omi sí orí ewé kí o sì mú etí oko mọ́ tónítóní."
+    ],
+    "expert_review_required": true,
+    "translation_review_status": "draft_translation_pending_native_expert_review",
+    "sources": [
+      "WorldVeg - Tomato Target Spot Guide",
+      "FAO - IPM Solanaceous Factsheets"
+    ]
+  },
+  "Tomato Yellow Leaf Curl Virus": {
+    "disease_id": "tomato_yellow_leaf_curl_virus",
+    "model_class_id": "Tomato Yellow Leaf Curl Virus",
+    "crop": "Tòmátò (Tomato)",
+    "display_name": "Àrùn Ọlọ́jọ́ Káwọ́ Ewé Tòmátò (TYLCV)",
+    "scientific_name": "Begomovirus (TYLCV)",
+    "status": "diseased",
+    "severity": "critical",
+    "description": "Àrùn kòkòrò fáírọ́ọ̀sì eléwu tí kòkòrò afò funfun (whitefly) ń gbé kiri, tó ń mú kí igi kúrú, kí ewé kálọ́wọ́ sí òkè, tí igi kò sì ní so èso.",
+    "symptoms": [
+      "Ewé tòmátò ń kálọ́wọ́ sí òkè bí ife",
+      "Àwọ̀ ewé tuntun ń yí sí pọ́n láàárín àwọn iṣan ewé",
+      "Igi kò ní ga, yóò kúrú pẹ̀lú ewé tó súnmọ́ ara wọn bí igbó",
+      "Ìtànná ń bọ́ dànù tí igi kò sì ní so èso tí ó bá ti ní àrùn ní kùtùkùtù"
+    ],
+    "treatment": [
+      "Kò tíì sí oògùn fún àrùn fáírọ́ọ̀sì yìí; fa àwọn igi tó ti ní àrùn tu kíákíá kí o sì sin wọ́n tàbí sun wọ́n kí wọ́n má tan àrùn náà.",
+      "Dènà kòkòrò afò funfun (whitefly) pẹ̀lú àwọn ọ̀nà tí àwọn òṣìṣẹ́ àgbẹ̀ dámọ̀ràn (bíi àwọ̀n àbò tàbí páńpẹ́ aláwọ̀ pọ́n).",
+      "Mú gbogbo koríko búburú kúrò ní àyíká oko."
+    ],
+    "prevention": [
+      "Gbin àwọn irúgbìn tòmátò tí wọ́n ti fọwọ́sí pé wọ́n lè kojú àrùn TYLCV.",
+      "Dáàbò bo àwọn ọmọ ọ̀gbìn nílé-ìtọ́jú pẹ̀lú àwọ̀n kòkòrò (50-mesh) kí o tó gbin wọ́n sí oko.",
+      "Yẹra fún gígbin tòmátò titun sí ẹ̀gbẹ́ oko àtijọ́ tó ti ní kòkòrò afò funfun.",
+      "Fi àkókò díẹ̀ sílẹ̀ láì gbin tòmátò láàárín àsìkò ìgbìn méjì láti pa àwọn kòkòrò náà mọ́ ebi."
+    ],
+    "expert_review_required": true,
+    "translation_review_status": "draft_translation_pending_native_expert_review",
+    "sources": [
+      "IITA - Whitefly-Transmitted Viruses in West Africa",
+      "WorldVeg - Management of TYLCV"
+    ]
+  },
+  "Tomato Mosaic Virus": {
+    "disease_id": "tomato_mosaic_virus",
+    "model_class_id": "Tomato Mosaic Virus",
+    "crop": "Tòmátò (Tomato)",
+    "display_name": "Àrùn Fáírọ́ọ̀sì Àbàwọ́n Ewé (Tomato Mosaic Virus)",
+    "scientific_name": "Tobamovirus (ToMV)",
+    "status": "diseased",
+    "severity": "high",
+    "description": "Àrùn fáírọ́ọ̀sì tó lágbára tó máa ń tàn nípasẹ̀ fífọwọ́kan ewé tàbí irinṣẹ́ oko, tó ń fa àbàwọ́n pọ́n àti ewéko tútù pọ̀ mọ́ ara wọn.",
+    "symptoms": [
+      "Àbàwọ́n ewéko tútù àti pọ́n tó dàpọ̀ lára ewé bí àwòrán móséìkì",
+      "Ewé ń kálọ́wọ́, wọ́n ń rí wẹ́wẹ́ bí okùn bàtà",
+      "Igi kò ní dàgbà dáradára, inú èso tòmátò sì lè di aláwọ̀ ilẹ̀",
+      "Èso kì í pọ́n dáradára tí dídára wọn sì ń dínkù"
+    ],
+    "treatment": [
+      "Tu àwọn igi tó ti ní àrùn náà dànù kíákíá; má ṣe lò wọ́n fún ajílẹ̀.",
+      "Fọ ọwọ́ rẹ dáradára pẹ̀lú ọṣẹ àti omi mímọ́ lẹ́yìn tí o bá fọwọ́kan igi tó ní àrùn tàbí sìgá taba.",
+      "Fọ àwọn irinṣẹ́ oko bí ọ̀bẹ, igi ìtìlẹ́yìn, àti àpótí pẹ̀lú omi tó mọ́ àti oògùn amú-nǹkan-mọ́."
+    ],
+    "prevention": [
+      "Gbin irúgbìn tí kò ní àrùn tàbí irúgbìn tó lè kojú àrùn mosaic virus.",
+      "Má ṣe mu sìgá tàbí fọwọ́kan ewé taba lẹ́gbẹ̀ẹ́ oko tòmátò, nítorí taba lè gbé àrùn tó jọ ọ́ wá.",
+      "Mú oko mọ́ tónítóní kí o sì fọ gbogbo irinṣẹ́ kí o tó lọ sí ìlà ọ̀gbìn mìíràn."
+    ],
+    "expert_review_required": true,
+    "translation_review_status": "draft_translation_pending_native_expert_review",
+    "sources": [
+      "WorldVeg - Viral Diseases of Tomato",
+      "FAO - Integrated Pest Management Guidelines for Vegetables"
+    ]
+  },
+  "Healthy Tomato Plant": {
+    "disease_id": "healthy_tomato",
+    "model_class_id": "Healthy Tomato Plant",
+    "crop": "Tòmátò (Tomato)",
+    "display_name": "Tòmátò Aláàlááfíà (Healthy Tomato)",
+    "scientific_name": "Solanum lycopersicum (Healthy)",
+    "status": "healthy",
+    "severity": "none",
+    "description": "Kò sí àmì àrùn kankan lórí ewé tòmátò. Ewé náà jẹ́ ewéko tútù tó dán, tó sì ń dàgbà pẹ̀lú agbára.",
+    "symptoms": [
+      "Ewé aláwọ̀ ewéko tútù tó péye láìsí àmì, kíkálọ́wọ́, tàbí àyíká pọ́n",
+      "Igi àárín tó lágbára pẹ̀lú ẹ̀ka tó gún régé",
+      "Ìtànná àti èso tòmátò tó dán láìsí àbàwọ́n lórí awọ wọn"
+    ],
+    "treatment": [
+      "Kò nílò ìtọ́jú àrùn kankan.",
+      "Tẹ̀síwájú láti máa wo orí àti abẹ́ ewé lẹ́ẹ̀kan lọ́sẹ̀ láti ṣọ́ kòkòrò."
+    ],
+    "prevention": [
+      "Bu omi sí ilẹ̀ ìdí igi déédéé láì jẹ́ kí omi kùn sórí ewé.",
+      "Tẹ koríko tàbí ewé gbígbẹ sí ìdí igi láti dènà koríko búburú àti láti pa ọ̀rinrin ilẹ̀ mọ́.",
+      "Di igi mọ́ òpó kí o sì yọ ẹ̀ka kéékèèké kúrò láti gba afẹ́fẹ́ láàyè."
+    ],
+    "expert_review_required": true,
+    "translation_review_status": "draft_translation_pending_native_expert_review",
+    "sources": [
+      "IITA - Good Agricultural Practices (GAP) for Tomato",
+      "FAO - Vegetable Production Guidelines"
+    ]
+  }
+}

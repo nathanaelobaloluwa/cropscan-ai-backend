@@ -1,0 +1,635 @@
+{
+  "Corn (Maize) with Cercospora and Gray Leaf Spot": {
+    "disease_id": "corn_gray_leaf_spot",
+    "model_class_id": "Corn (Maize) with Cercospora and Gray Leaf Spot",
+    "crop": "Corn (Maize)",
+    "display_name": "Gray Leaf Spot (Cercospora)",
+    "scientific_name": "Cercospora zeae-maydis",
+    "status": "diseased",
+    "severity": "moderate_to_high",
+    "description": "A fungal foliar disease in maize favored by warm, humid weather and prolonged leaf wetness, causing rectangular lesions along leaf veins.",
+    "symptoms": [
+      "Small, tan spots that elongate into narrow rectangular brown-gray lesions",
+      "Lesions bounded by leaf veins with distinct parallel edges",
+      "Severe blighting and premature drying of lower canopy leaves"
+    ],
+    "treatment": [
+      "Consult a local agricultural extension officer to verify local severity thresholds before considering chemical intervention.",
+      "Avoid handling or cultivating through wet crop foliage to reduce spore dispersal.",
+      "Remove heavily infected residue from small plots after harvest."
+    ],
+    "prevention": [
+      "Plant certified tolerant or resistant maize varieties recommended for your agro-ecological zone.",
+      "Rotate with non-host crops (such as legumes, cowpea, or soybean) to interrupt disease carryover in crop debris.",
+      "Ensure proper planting density to promote air movement and reduce canopy humidity."
+    ],
+    "expert_review_required": true,
+    "translation_review_status": "english_verified_from_agricultural_literature",
+    "sources": [
+      "CIMMYT - Maize Diseases: A Guide for Field Identification",
+      "IITA - Research Guide: Maize Pathology and Crop Protection"
+    ]
+  },
+  "Corn (Maize) with Common Rust": {
+    "disease_id": "corn_common_rust",
+    "model_class_id": "Corn (Maize) with Common Rust",
+    "crop": "Corn (Maize)",
+    "display_name": "Common Rust",
+    "scientific_name": "Puccinia sorghi",
+    "status": "diseased",
+    "severity": "moderate",
+    "description": "A airborne fungal disease causing powdery cinnamon-brown pustules on both upper and lower leaf surfaces.",
+    "symptoms": [
+      "Oval to elongate cinnamon-brown pustules scattered across both leaf surfaces",
+      "Pustules rupture the leaf epidermis to release powdery orange-brown spores",
+      "Chlorosis and drying of severely infected leaf tissue"
+    ],
+    "treatment": [
+      "Consult local agricultural extension agents for guidance if pustules appear before tassel emergence.",
+      "Maintain balanced plant nutrition to help the crop withstand foliar stress.",
+      "Avoid overhead irrigation where practical."
+    ],
+    "prevention": [
+      "Plant locally adapted, rust-resistant hybrid or open-pollinated maize seed.",
+      "Time planting with regional extension calendars to avoid peak spore migration windows.",
+      "Practice clean field borders and weed control."
+    ],
+    "expert_review_required": true,
+    "translation_review_status": "english_verified_from_agricultural_literature",
+    "sources": [
+      "CIMMYT - Maize Diseases: A Guide for Field Identification",
+      "FAO - Integrated Pest Management for Maize"
+    ]
+  },
+  "Corn (Maize) with Northern Leaf Blight": {
+    "disease_id": "corn_northern_leaf_blight",
+    "model_class_id": "Corn (Maize) with Northern Leaf Blight",
+    "crop": "Corn (Maize)",
+    "display_name": "Northern Corn Leaf Blight",
+    "scientific_name": "Exserohilum turcicum",
+    "status": "diseased",
+    "severity": "high",
+    "description": "A serious fungal foliar blighting disease that produces long, elliptical grayish-green lesions on maize foliage.",
+    "symptoms": [
+      "Long, cigar-shaped elliptical lesions (2.5 to 15 cm long) on leaves",
+      "Lesions start grayish-green and mature into tan or brown with dark spore margins",
+      "Extensive leaf tissue death when multiple lesions coalesce"
+    ],
+    "treatment": [
+      "Contact an extension agronomist to assess field incidence before silking stage.",
+      "Avoid sprinkler or overhead wetting during warm humid periods.",
+      "Collect and bury or burn heavily blighted residue post-harvest if practical."
+    ],
+    "prevention": [
+      "Select resistant or tolerant maize seed cultivars verified by regional seed boards.",
+      "Practice minimum two-year crop rotation with non-grass crops (e.g. cowpea, soybean, groundnut).",
+      "Incorporate or decompose surface crop residues that harbor overwintering fungal structures."
+    ],
+    "expert_review_required": true,
+    "translation_review_status": "english_verified_from_agricultural_literature",
+    "sources": [
+      "IITA - Maize Production and Disease Management Manual",
+      "CIMMYT - Field Guide to Maize Diseases"
+    ]
+  },
+  "Healthy Corn (Maize) Plant": {
+    "disease_id": "healthy_corn",
+    "model_class_id": "Healthy Corn (Maize) Plant",
+    "crop": "Corn (Maize)",
+    "display_name": "Healthy Maize",
+    "scientific_name": "Zea mays (Healthy)",
+    "status": "healthy",
+    "severity": "none",
+    "description": "No visible leaf disease symptoms detected. The foliage exhibits uniform green coloration with normal vein architecture.",
+    "symptoms": [
+      "Uniform green leaves without lesions, pustules, or chlorotic streaks",
+      "Clean leaf edges and upright, vigorous growth",
+      "Intact leaf surface free of fungal sporulation"
+    ],
+    "treatment": [
+      "No disease treatment needed.",
+      "Maintain regular crop scouting every 7 to 10 days to monitor for emergence of pests or spots."
+    ],
+    "prevention": [
+      "Continue standard good agronomic practices including timely weeding and balanced fertilization.",
+      "Monitor soil moisture and maintain good field drainage.",
+      "Report any sudden change in leaf color or spot emergence to local extension officers."
+    ],
+    "expert_review_required": true,
+    "translation_review_status": "english_verified_from_agricultural_literature",
+    "sources": [
+      "IITA - Good Agricultural Practices (GAP) for Maize",
+      "FAO - Crop Management Guidelines"
+    ]
+  },
+  "Orange with Citrus Greening": {
+    "disease_id": "citrus_greening",
+    "model_class_id": "Orange with Citrus Greening",
+    "crop": "Citrus (Orange)",
+    "display_name": "Citrus Greening (Huanglongbing)",
+    "scientific_name": "Candidatus Liberibacter spp.",
+    "status": "diseased",
+    "severity": "critical",
+    "description": "A devastating, insect-vectored bacterial disease of citrus that causes asymmetrical leaf mottling, twig dieback, and small, misshapen, bitter fruit.",
+    "symptoms": [
+      "Asymmetrical blotchy mottle on leaves crossing leaf veins",
+      "Yellowing of veins followed by yellow shoot development",
+      "Small, lopsided fruit that remain green at the bottom and taste bitter",
+      "Twig dieback and progressive tree decline"
+    ],
+    "treatment": [
+      "Immediately report suspected cases to national plant protection agencies or local extension authorities.",
+      "There is no known cure for infected trees; infected trees should be removed and destroyed as advised by agricultural authorities to protect neighboring orchards.",
+      "Do not move plant material, scions, or nursery stock from suspected infected areas."
+    ],
+    "prevention": [
+      "Plant only certified disease-free nursery stock from inspected, registered citrus nurseries.",
+      "Monitor orchards for the presence of psyllid insect vectors (Diaphorina citri or Trioza erytreae).",
+      "Manage psyllid vector populations following official regional pest management advisories."
+    ],
+    "expert_review_required": true,
+    "translation_review_status": "english_verified_from_agricultural_literature",
+    "sources": [
+      "FAO - Citrus Greening Disease Technical Manual",
+      "EPPO / IITA - Plant Quarantine and Citrus Health Briefs"
+    ]
+  },
+  "Bell Pepper with Bacterial Spot": {
+    "disease_id": "pepper_bacterial_spot",
+    "model_class_id": "Bell Pepper with Bacterial Spot",
+    "crop": "Bell Pepper",
+    "display_name": "Bacterial Spot",
+    "scientific_name": "Xanthomonas spp.",
+    "status": "diseased",
+    "severity": "high",
+    "description": "A bacterial disease favored by warm temperatures and heavy rainfall that causes water-soaked spots on leaves and scabby lesions on fruit.",
+    "symptoms": [
+      "Small, circular to irregular water-soaked spots on leaves that turn brown-black with pale halos",
+      "Spots may crack or drop out, giving leaves a ragged look",
+      "Severe defoliation exposing developing fruit to sunscald",
+      "Rough, raised, warty lesions on pepper fruit"
+    ],
+    "treatment": [
+      "Avoid overhead irrigation; water at the base of the plant to prevent splashing bacteria.",
+      "Refrain from working in or weeding pepper rows while foliage is wet from rain or dew.",
+      "Remove and destroy severely affected plant debris away from production beds."
+    ],
+    "prevention": [
+      "Use certified disease-free seeds or hot-water treated seeds.",
+      "Select resistant pepper cultivars where available.",
+      "Rotate with non-solanaceous crops (avoid planting after tomato, potato, or eggplant) for at least two years.",
+      "Disinfect stakes, trays, and cutting tools with appropriate cleaning solutions."
+    ],
+    "expert_review_required": true,
+    "translation_review_status": "english_verified_from_agricultural_literature",
+    "sources": [
+      "World Vegetable Center (WorldVeg) - Pepper Diseases and Management",
+      "FAO - Integrated Pest Management for Solanaceous Crops"
+    ]
+  },
+  "Healthy Bell Pepper Plant": {
+    "disease_id": "healthy_pepper",
+    "model_class_id": "Healthy Bell Pepper Plant",
+    "crop": "Bell Pepper",
+    "display_name": "Healthy Bell Pepper",
+    "scientific_name": "Capsicum annuum (Healthy)",
+    "status": "healthy",
+    "severity": "none",
+    "description": "No disease symptoms observed. Foliage is firm, uniformly colored, and growing vigorously.",
+    "symptoms": [
+      "Clean, smooth green leaves free of spots, blisters, or curling",
+      "Sturdy stem and vigorous branching",
+      "Normal flower and fruit set without surface lesions"
+    ],
+    "treatment": [
+      "No treatment required.",
+      "Continue routine weekly field monitoring for signs of pests or bacterial lesions."
+    ],
+    "prevention": [
+      "Maintain consistent soil moisture and avoid waterlogging around roots.",
+      "Apply organic mulch to retain moisture and prevent soil splash.",
+      "Practice balanced crop nutrition and avoid excess nitrogen which causes soft, disease-prone growth."
+    ],
+    "expert_review_required": true,
+    "translation_review_status": "english_verified_from_agricultural_literature",
+    "sources": [
+      "WorldVeg - Good Agricultural Practices for Sweet Pepper",
+      "IITA - Vegetable Guide"
+    ]
+  },
+  "Potato with Early Blight": {
+    "disease_id": "potato_early_blight",
+    "model_class_id": "Potato with Early Blight",
+    "crop": "Potato",
+    "display_name": "Early Blight",
+    "scientific_name": "Alternaria solani",
+    "status": "diseased",
+    "severity": "moderate_to_high",
+    "description": "A common fungal disease of potato causing dark, concentric target-like spots primarily on older leaves.",
+    "symptoms": [
+      "Small dark brown to black spots with concentric rings (target pattern) on older leaves",
+      "Yellowing of leaf tissue surrounding the spots",
+      "Leaves turn brown, wither, and drop prematurely as spots enlarge"
+    ],
+    "treatment": [
+      "Consult local extension services for approved regional management protocols.",
+      "Prune and safely dispose of heavily infected lower leaves in small gardens.",
+      "Irrigate early in the morning so leaf surfaces dry rapidly during the day."
+    ],
+    "prevention": [
+      "Plant certified disease-free seed tubers.",
+      "Rotate with non-solanaceous crops (such as maize, legumes, or sorghum) for 2 to 3 years.",
+      "Maintain adequate plant nutrition, especially nitrogen and potassium, to prevent plant stress.",
+      "Destroy volunteer potato plants and cull piles near fields."
+    ],
+    "expert_review_required": true,
+    "translation_review_status": "english_verified_from_agricultural_literature",
+    "sources": [
+      "International Potato Center (CIP) - Potato Pathology Manual",
+      "FAO - Integrated Pest Management for Potato"
+    ]
+  },
+  "Potato with Late Blight": {
+    "disease_id": "potato_late_blight",
+    "model_class_id": "Potato with Late Blight",
+    "crop": "Potato",
+    "display_name": "Late Blight",
+    "scientific_name": "Phytophthora infestans",
+    "status": "diseased",
+    "severity": "critical",
+    "description": "A destructive water mold (oomycete) pathogen that rapidly blights leaves, stems, and tubers under cool, moist conditions.",
+    "symptoms": [
+      "Water-soaked dark green to purplish-black lesions on leaves and stems",
+      "White fungal-like fuzzy growth on the underside of leaves during humid conditions",
+      "Rapid wilting, browning, and rotting of foliage within days",
+      "Dry, brownish granular rot beneath tuber skin"
+    ],
+    "treatment": [
+      "Immediately notify extension agents if late blight is suspected in your locality.",
+      "Destroy heavily diseased plants immediately to prevent airborne spore clouds from spreading.",
+      "Avoid overhead watering and do not wash harvested tubers from infected plots."
+    ],
+    "prevention": [
+      "Plant certified resistant or tolerant potato varieties.",
+      "Ensure proper hilling of soil over potato beds to prevent spores washing down to tubers.",
+      "Strictly destroy cull piles and volunteer potatoes before the planting season.",
+      "Never save seed tubers from fields affected by late blight."
+    ],
+    "expert_review_required": true,
+    "translation_review_status": "english_verified_from_agricultural_literature",
+    "sources": [
+      "International Potato Center (CIP) - Late Blight Management Guide",
+      "FAO - Potato Pest and Disease Compendium"
+    ]
+  },
+  "Healthy Potato Plant": {
+    "disease_id": "healthy_potato",
+    "model_class_id": "Healthy Potato Plant",
+    "crop": "Potato",
+    "display_name": "Healthy Potato",
+    "scientific_name": "Solanum tuberosum (Healthy)",
+    "status": "healthy",
+    "severity": "none",
+    "description": "No visible signs of foliar disease. Foliage displays healthy green development.",
+    "symptoms": [
+      "Lush, uniformly green leaves with clean surfaces",
+      "Sturdy upright stems without lesions or dark cankers",
+      "Healthy root and stolon formation without decay"
+    ],
+    "treatment": [
+      "No treatment required.",
+      "Conduct regular weekly scouting, particularly during cool, misty, or rainy periods."
+    ],
+    "prevention": [
+      "Keep soil properly hilled around stems to shield developing tubers from sunlight and spore exposure.",
+      "Maintain consistent, well-drained soil moisture.",
+      "Follow clean tool sanitation when moving between plots."
+    ],
+    "expert_review_required": true,
+    "translation_review_status": "english_verified_from_agricultural_literature",
+    "sources": [
+      "International Potato Center (CIP) - Potato Production Guide",
+      "FAO - Good Agricultural Practices for Root and Tuber Crops"
+    ]
+  },
+  "Tomato with Bacterial Spot": {
+    "disease_id": "tomato_bacterial_spot",
+    "model_class_id": "Tomato with Bacterial Spot",
+    "crop": "Tomato",
+    "display_name": "Bacterial Spot",
+    "scientific_name": "Xanthomonas spp.",
+    "status": "diseased",
+    "severity": "high",
+    "description": "A bacterial pathogen causing small, dark, water-soaked spots on tomato foliage, stems, and fruit.",
+    "symptoms": [
+      "Small, dark brown to black water-soaked lesions on leaves and stems",
+      "Spots may have a greasy appearance and can be surrounded by yellow halos",
+      "Severe infection leads to leaf yellowing, scorch, and heavy defoliation",
+      "Small, scabby, slightly raised black spots on immature fruit"
+    ],
+    "treatment": [
+      "Remove heavily infected leaves in small holdings; do not work in fields when foliage is wet.",
+      "Consult extension workers for locally registered preventative sprays if disease pressure is high.",
+      "Water at ground level using drip or furrow methods to minimize splash dispersal."
+    ],
+    "prevention": [
+      "Use certified disease-free seeds from reputable suppliers.",
+      "Rotate with non-solanaceous crops for at least 2 consecutive years.",
+      "Clean and sanitize greenhouse benches, stakes, and pruning shears."
+    ],
+    "expert_review_required": true,
+    "translation_review_status": "english_verified_from_agricultural_literature",
+    "sources": [
+      "World Vegetable Center (WorldVeg) - Tomato Disease Management",
+      "FAO - Integrated Pest Management for Tomato"
+    ]
+  },
+  "Tomato with Early Blight": {
+    "disease_id": "tomato_early_blight",
+    "model_class_id": "Tomato with Early Blight",
+    "crop": "Tomato",
+    "display_name": "Early Blight",
+    "scientific_name": "Alternaria solani",
+    "status": "diseased",
+    "severity": "moderate_to_high",
+    "description": "Fungal disease characterized by concentric dark brown target-like rings on older lower leaves, eventually causing yellowing and premature leaf drop.",
+    "symptoms": [
+      "Small brown-black spots on older lower leaves that enlarge into concentric target rings",
+      "Yellow halos surrounding individual spots",
+      "Progressive yellowing, withering, and dropping of lower leaves",
+      "Sunken, dark, leathery lesions at the stem end of fruits"
+    ],
+    "treatment": [
+      "Prune and dispose of infected lower leaves immediately; do not compost them.",
+      "Ensure foliage remains dry when watering; switch to drip or root-level watering.",
+      "Consult local extension officers for approved regional fungal management guidelines."
+    ],
+    "prevention": [
+      "Practice 2 to 3-year crop rotation with non-solanaceous crops.",
+      "Apply clean straw or organic mulch around plant bases to prevent soil splash.",
+      "Space plants at least 50–60 cm apart to promote good air circulation.",
+      "Stake tomato vines to keep foliage off bare ground."
+    ],
+    "expert_review_required": true,
+    "translation_review_status": "english_verified_from_agricultural_literature",
+    "sources": [
+      "IITA - Tomato Production and Pest Management Manual",
+      "WorldVeg - Integrated Disease Management in Tomato"
+    ]
+  },
+  "Tomato with Late Blight": {
+    "disease_id": "tomato_late_blight",
+    "model_class_id": "Tomato with Late Blight",
+    "crop": "Tomato",
+    "display_name": "Late Blight",
+    "scientific_name": "Phytophthora infestans",
+    "status": "diseased",
+    "severity": "critical",
+    "description": "A fast-spreading water mold that causes large water-soaked spots, rapid leaf collapse, and firm, dark brown fruit rot in cool, humid conditions.",
+    "symptoms": [
+      "Large, irregular water-soaked pale-green to brown lesions on leaves and stems",
+      "White fungal-like fuzz on lesion undersides during humid morning hours",
+      "Rapid blighting and collapse of entire vines within days",
+      "Large, firm, greasy brown lesions on green and ripening fruit"
+    ],
+    "treatment": [
+      "Remove and destroy severely blighted plants immediately; do not leave them in the field.",
+      "Notify nearby growers and agricultural extension officers, as late blight spores travel on wind currents.",
+      "Avoid overhead sprinkler irrigation."
+    ],
+    "prevention": [
+      "Plant certified resistant varieties where available.",
+      "Avoid planting tomatoes adjacent to potato fields.",
+      "Ensure wide spacing and staking to maximize canopy airflow.",
+      "Eliminate cull piles, volunteer tomatoes, and solanaceous weeds near production fields."
+    ],
+    "expert_review_required": true,
+    "translation_review_status": "english_verified_from_agricultural_literature",
+    "sources": [
+      "FAO - Integrated Pest Management for Tomato",
+      "IITA - Plant Health and Vegetable Guide"
+    ]
+  },
+  "Tomato with Leaf Mold": {
+    "disease_id": "tomato_leaf_mold",
+    "model_class_id": "Tomato with Leaf Mold",
+    "crop": "Tomato",
+    "display_name": "Leaf Mold",
+    "scientific_name": "Passalora fulva (syn. Fulvia fulva)",
+    "status": "diseased",
+    "severity": "moderate",
+    "description": "A fungal disease prevalent in high humidity and enclosed spaces (like greenhouses or high tunnels), producing pale green-yellow spots with velvety olive-brown mold beneath.",
+    "symptoms": [
+      "Pale green to yellowish patches on upper surfaces of older leaves",
+      "Dense olive-green to brownish velvety mold growth on the lower leaf surface corresponding to spots",
+      "Affected leaves turn yellow, curl, and wither, reducing plant photosynthesis"
+    ],
+    "treatment": [
+      "Improve ventilation and lower relative humidity in enclosed growing structures.",
+      "Prune lower foliage to increase air circulation through the canopy.",
+      "Avoid wetting the foliage during irrigation."
+    ],
+    "prevention": [
+      "Select tomato cultivars with known resistance to leaf mold races.",
+      "Maintain adequate plant spacing (at least 60 cm between plants).",
+      "Sanitize greenhouse structures, stakes, and tools between crop cycles."
+    ],
+    "expert_review_required": true,
+    "translation_review_status": "english_verified_from_agricultural_literature",
+    "sources": [
+      "WorldVeg - Tomato Disease Identification Guide",
+      "FAO - Protected Agriculture Pest Management"
+    ]
+  },
+  "Tomato with Septoria Leaf Spot": {
+    "disease_id": "tomato_septoria_leaf_spot",
+    "model_class_id": "Tomato with Septoria Leaf Spot",
+    "crop": "Tomato",
+    "display_name": "Septoria Leaf Spot",
+    "scientific_name": "Septoria lycopersici",
+    "status": "diseased",
+    "severity": "moderate_to_high",
+    "description": "A fungal disease causing numerous small, circular spots with dark margins and grayish centers on lower tomato leaves.",
+    "symptoms": [
+      "Numerous small (1.5 to 3 mm), circular spots on lower leaves",
+      "Spots feature dark brown borders and grayish-white centers with tiny black speckles (pycnidia)",
+      "Leaves turn yellow, dry out, and drop prematurely, progressing upwards from plant base"
+    ],
+    "treatment": [
+      "Pinch off and discard infected lower leaves as soon as first spots appear.",
+      "Water exclusively at soil level using drip systems.",
+      "Consult extension agents for approved protective sprays if defoliation threatens fruit yield."
+    ],
+    "prevention": [
+      "Rotate fields away from solanaceous crops for 2 or more years.",
+      "Apply organic mulch around vines to prevent soil-splashed spores.",
+      "Stake and prune plants to promote sunlight penetration and leaf drying.",
+      "Clean up all tomato crop residue after harvest."
+    ],
+    "expert_review_required": true,
+    "translation_review_status": "english_verified_from_agricultural_literature",
+    "sources": [
+      "IITA - Vegetable Guide: Disease Management",
+      "WorldVeg - Tomato Pathology Compendium"
+    ]
+  },
+  "Tomato with Spider Mites or Two-spotted Spider Mite": {
+    "disease_id": "tomato_spider_mites",
+    "model_class_id": "Tomato with Spider Mites or Two-spotted Spider Mite",
+    "crop": "Tomato",
+    "display_name": "Two-Spotted Spider Mite Damage",
+    "scientific_name": "Tetranychus urticae",
+    "status": "diseased",
+    "severity": "moderate_to_high",
+    "description": "Tiny arachnid pests that feed by piercing leaf cells under hot, dry conditions, causing pale stippling and fine webbing on leaf undersides.",
+    "symptoms": [
+      "Fine yellow or white stippling (pinpoint dots) on upper leaf surfaces",
+      "Silken, delicate webbing visible on leaf undersides and terminal shoots",
+      "Leaves turn bronze or yellow, dry up, and drop in severe infestations",
+      "Overall stunted plant growth and reduced fruit size"
+    ],
+    "treatment": [
+      "Spray leaf undersides with strong streams of water to dislodge mites in small plots.",
+      "Conserve natural predators (such as predatory mites and ladybugs) by avoiding indiscriminate broad-spectrum sprays.",
+      "Consult local extension officers for approved horticultural oils or soaps."
+    ],
+    "prevention": [
+      "Avoid water stress by maintaining consistent soil moisture, as mites thrive in drought-stressed crops.",
+      "Control weeds and dust along field borders.",
+      "Inspect leaf undersides weekly with a hand lens during hot dry seasons."
+    ],
+    "expert_review_required": true,
+    "translation_review_status": "english_verified_from_agricultural_literature",
+    "sources": [
+      "FAO - Integrated Pest Management for Tomato",
+      "IITA - Insect Pests of Horticultural Crops"
+    ]
+  },
+  "Tomato with Target Spot": {
+    "disease_id": "tomato_target_spot",
+    "model_class_id": "Tomato with Target Spot",
+    "crop": "Tomato",
+    "display_name": "Target Spot",
+    "scientific_name": "Corynespora cassiicola",
+    "status": "diseased",
+    "severity": "moderate_to_high",
+    "description": "A fungal foliar disease favored by warm, humid environments, causing brown circular spots that may develop faint concentric rings.",
+    "symptoms": [
+      "Small, pinpoint water-soaked spots on upper leaf surfaces",
+      "Lesions enlarge into circular brown lesions with light brown centers and faint concentric zones",
+      "Severe leaf blighting, premature yellowing, and defoliation",
+      "Small brown lesions on green and ripe fruit"
+    ],
+    "treatment": [
+      "Remove and safely discard diseased foliage in small plots.",
+      "Improve air movement by thinning excess vegetative suckers.",
+      "Seek advice from extension officers if target spot spreads through the upper canopy."
+    ],
+    "prevention": [
+      "Rotate out of solanaceous and cucurbit crops that also host Corynespora.",
+      "Stake vines and maintain 50 to 60 cm in-row spacing.",
+      "Avoid overhead irrigation and keep field borders clean of weed hosts."
+    ],
+    "expert_review_required": true,
+    "translation_review_status": "english_verified_from_agricultural_literature",
+    "sources": [
+      "WorldVeg - Diagnostic Guide to Tomato Target Spot",
+      "FAO - IPM Solanaceous Factsheets"
+    ]
+  },
+  "Tomato Yellow Leaf Curl Virus": {
+    "disease_id": "tomato_yellow_leaf_curl_virus",
+    "model_class_id": "Tomato Yellow Leaf Curl Virus",
+    "crop": "Tomato",
+    "display_name": "Tomato Yellow Leaf Curl Virus (TYLCV)",
+    "scientific_name": "Begomovirus (TYLCV)",
+    "status": "diseased",
+    "severity": "critical",
+    "description": "A severe viral disease transmitted by whiteflies (Bemisia tabaci) that causes severe stunting, upward leaf curling, and drastic fruit yield reduction.",
+    "symptoms": [
+      "Pronounced upward curling and cupping of leaflet margins",
+      "Interveinal yellowing (chlorosis) of younger leaves",
+      "Marked plant stunting with a bushy, erect appearance",
+      "Severe drop of flowers and little to no fruit set on early-infected plants"
+    ],
+    "treatment": [
+      "There is no cure for viral infection; promptly rogue (uproot and bury/burn) early infected plants to remove the virus reservoir.",
+      "Manage the whitefly vector population following extension recommendations (e.g. yellow sticky traps, insect exclusion netting in nurseries).",
+      "Keep surrounding areas free of alternate weed hosts."
+    ],
+    "prevention": [
+      "Plant certified TYLCV-resistant or tolerant tomato hybrids.",
+      "Protect seedlings in nurseries with fine insect-proof mesh netting (50-mesh) before transplanting.",
+      "Avoid planting new tomato fields downwind from older, infested tomato or pepper fields.",
+      "Implement a host-free fallow period between cropping seasons."
+    ],
+    "expert_review_required": true,
+    "translation_review_status": "english_verified_from_agricultural_literature",
+    "sources": [
+      "IITA - Whitefly-Transmitted Viruses and Management in West Africa",
+      "WorldVeg - Management of Tomato Yellow Leaf Curl Virus Disease"
+    ]
+  },
+  "Tomato Mosaic Virus": {
+    "disease_id": "tomato_mosaic_virus",
+    "model_class_id": "Tomato Mosaic Virus",
+    "crop": "Tomato",
+    "display_name": "Tomato Mosaic Virus (ToMV)",
+    "scientific_name": "Tobamovirus (ToMV)",
+    "status": "diseased",
+    "severity": "high",
+    "description": "A persistent, mechanically transmitted plant virus causing mottled green and yellow patterns, leaf distortion, and stunted growth.",
+    "symptoms": [
+      "Mottled light and dark green patterns on leaves ('mosaic' appearance)",
+      "Distortion, puckering, or 'shoestringing' of leaflets",
+      "Plant stunting and internal browning of fruit walls",
+      "Uneven ripening and reduced fruit quality"
+    ],
+    "treatment": [
+      "Immediately rogue and discard infected plants; do not compost them.",
+      "Wash hands thoroughly with soap and clean water after handling infected crops or tobacco products.",
+      "Disinfect all cutting tools, stakes, and crates with clean water and disinfectant."
+    ],
+    "prevention": [
+      "Plant certified virus-free seed or resistant tomato cultivars.",
+      "Prohibit smoking or handling raw tobacco near tomato beds, as tobacco can carry the related Tobacco Mosaic Virus.",
+      "Practice strict field hygiene and sanitize tools before moving between rows."
+    ],
+    "expert_review_required": true,
+    "translation_review_status": "english_verified_from_agricultural_literature",
+    "sources": [
+      "WorldVeg - Viral Diseases of Tomato",
+      "FAO - Integrated Pest Management Guidelines for Vegetables"
+    ]
+  },
+  "Healthy Tomato Plant": {
+    "disease_id": "healthy_tomato",
+    "model_class_id": "Healthy Tomato Plant",
+    "crop": "Tomato",
+    "display_name": "Healthy Tomato",
+    "scientific_name": "Solanum lycopersicum (Healthy)",
+    "status": "healthy",
+    "severity": "none",
+    "description": "No visible foliar disease symptoms detected. Foliage displays vigorous, uniform green growth with normal leaf shape.",
+    "symptoms": [
+      "Uniform deep green foliage without spots, curling, or yellow halos",
+      "Strong central stem with well-developed branches",
+      "Healthy flower trusses and smooth, clean developing fruit"
+    ],
+    "treatment": [
+      "No disease treatment required.",
+      "Continue regular weekly scouting of upper and lower leaf surfaces."
+    ],
+    "prevention": [
+      "Maintain consistent soil moisture using drip irrigation or soil-level watering.",
+      "Apply organic mulch around plant bases to suppress weeds and retain soil moisture.",
+      "Stake vines and prune lower suckers to promote good air circulation."
+    ],
+    "expert_review_required": true,
+    "translation_review_status": "english_verified_from_agricultural_literature",
+    "sources": [
+      "IITA - Good Agricultural Practices (GAP) for Tomato Production",
+      "FAO - Vegetable Production Guidelines"
+    ]
+  }
+}
