@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
 from werkzeug.exceptions import RequestEntityTooLarge
 
+from app.services.guidance import GuidanceService
 from app.services.image_validator import ImageValidationError, validate_and_load_image
 from app.services.predictor import (
     InferenceExecutionError,
@@ -19,17 +20,19 @@ def predict():
     """
     POST /api/predict
 
-    Receives a leaf image upload via multipart form-data, performs security
-    and raster validation, runs genuine inference on MobileNetV2, and returns
-    verified predictions along with localized agronomic guidance in English or Yoruba.
+    Receives a leaf image upload and user crop selection via multipart form-data,
+    performs security and raster validation, runs genuine inference on MobileNetV2,
+    protects against crop mismatches, and returns verified predictions along with
+    localized agronomic guidance in English or Yoruba.
 
     Form Parameters:
         image: File (JPEG, PNG, or WebP up to 10 MB).
+        crop: Required string ('tomato', 'maize', 'bell_pepper', 'citrus', 'potato').
         lang: Optional string ('en' or 'yo', defaults to 'en').
 
-    Response (Phase 3):
-        Returns HTTP 200 with genuine prediction, model confidence, assessment
-        status, and localized guidance.
+    Response (Phase 5):
+        Returns HTTP 200 with genuine prediction, selected crop, predicted crop,
+        crop match status, model confidence, assessment status, and localized guidance.
     """
     # 1. Validate Language Parameter
     raw_lang = request.form.get("lang") or request.args.get("lang") or "en"
@@ -41,7 +44,30 @@ def predict():
             "message": "Supported languages are 'en' (English) and 'yo' (Yoruba).",
         }), 400
 
-    # 2. Validate Presence of Image File
+    # 2. Validate Crop Selection Parameter
+    raw_crop = request.form.get("crop") or request.args.get("crop")
+    if not raw_crop or not str(raw_crop).strip():
+        return jsonify({
+            "error": "missing_crop",
+            "message": (
+                "Field 'crop' is required. Supported crops are: 'tomato', 'maize', 'bell_pepper', 'citrus', 'potato'."
+                if lang == "en"
+                else "A nílò orúkọ irúgbìn ní 'crop'. Àwọn irúgbìn tí a tìlẹ́yìn ni: 'tomato', 'maize', 'bell_pepper', 'citrus', 'potato'."
+            ),
+        }), 400
+
+    selected_crop = GuidanceService.normalize_crop(raw_crop)
+    if selected_crop is None:
+        return jsonify({
+            "error": "unsupported_crop",
+            "message": (
+                f"Unsupported crop '{raw_crop}'. Supported crops are: 'tomato', 'maize', 'bell_pepper', 'citrus', 'potato'."
+                if lang == "en"
+                else f"Irúgbìn '{raw_crop}' kò tíì wà ní àmúlò. Àwọn irúgbìn tí a tìlẹ́yìn ni: 'tomato', 'maize', 'bell_pepper', 'citrus', 'potato'."
+            ),
+        }), 400
+
+    # 3. Validate Presence of Image File
     if "image" not in request.files:
         return jsonify({
             "error": "missing_image",
@@ -56,7 +82,7 @@ def predict():
             "message": "The uploaded image file is empty or has no filename.",
         }), 400
 
-    # 3. Validate and Safely Load Image in Memory
+    # 4. Validate and Safely Load Image in Memory
     try:
         metadata, rgb_image = validate_and_load_image(file)
     except ImageValidationError as e:
@@ -65,10 +91,10 @@ def predict():
             "message": e.message,
         }), e.status_code
 
-    # 4. Execute Real Model Inference
+    # 5. Execute Real Model Inference with Crop Mismatch Protection
     try:
         predictor = get_prediction_service()
-        prediction = predictor.predict(rgb_image, lang=lang)
+        prediction = predictor.predict(rgb_image, selected_crop=selected_crop, lang=lang)
     except ModelLoadError as e:
         return jsonify({
             "error": e.error_code,
@@ -85,13 +111,15 @@ def predict():
             "message": f"An unexpected error occurred during prediction: {str(e)}",
         }), 500
 
-    # 5. Return Genuine Prediction and Localized Guidance
+    # 6. Return Genuine Prediction, Crop Mismatch Protection & Localized Guidance
     return jsonify({
         "status": "success",
+        "selected_crop": selected_crop,
         "language": lang,
         "image_metadata": metadata,
         "prediction": prediction,
     }), 200
+
 
 
 @predict_bp.errorhandler(RequestEntityTooLarge)

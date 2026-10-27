@@ -19,9 +19,32 @@ class GuidanceService:
     DEFAULT_LANGUAGE = "en"
     DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
+    # Supported crop identifiers for the Nigerian prototype scope
+    SUPPORTED_CROPS = ("tomato", "maize", "bell_pepper", "citrus", "potato")
+
+    # Common aliases mapping to canonical crop identifiers
+    CROP_ALIASES = {
+        "tomato": "tomato",
+        "tomatoes": "tomato",
+        "maize": "maize",
+        "corn": "maize",
+        "bell_pepper": "bell_pepper",
+        "bell pepper": "bell_pepper",
+        "bellpepper": "bell_pepper",
+        "pepper": "bell_pepper",
+        "peppers": "bell_pepper",
+        "citrus": "citrus",
+        "orange": "citrus",
+        "citrus (orange)": "citrus",
+        "potato": "potato",
+        "potatoes": "potato",
+        "irish potato": "potato",
+    }
+
     def __init__(self, data_dir: Optional[Path] = None):
         self.data_dir = Path(data_dir) if data_dir else self.DATA_DIR
         self._class_indices: Dict[str, str] = {}
+        self._class_to_crop: Dict[str, str] = {}
         self._disease_info_en: Dict[str, Dict[str, Any]] = {}
         self._disease_info_yo: Dict[str, Dict[str, Any]] = {}
         self._load_datasets()
@@ -29,11 +52,14 @@ class GuidanceService:
     def _load_datasets(self) -> None:
         """Load datasets from disk into memory."""
         class_indices_file = self.data_dir / "class_indices.json"
+        class_to_crop_file = self.data_dir / "class_to_crop.json"
         en_file = self.data_dir / "disease_info_en.json"
         yo_file = self.data_dir / "disease_info_yo.json"
 
         if not class_indices_file.exists():
             raise FileNotFoundError(f"Missing class indices mapping: {class_indices_file}")
+        if not class_to_crop_file.exists():
+            raise FileNotFoundError(f"Missing class-to-crop mapping: {class_to_crop_file}")
         if not en_file.exists():
             raise FileNotFoundError(f"Missing English disease info dataset: {en_file}")
         if not yo_file.exists():
@@ -41,6 +67,9 @@ class GuidanceService:
 
         with open(class_indices_file, "r", encoding="utf-8") as f:
             self._class_indices = json.load(f)
+
+        with open(class_to_crop_file, "r", encoding="utf-8") as f:
+            self._class_to_crop = json.load(f)
 
         with open(en_file, "r", encoding="utf-8") as f:
             self._disease_info_en = json.load(f)
@@ -53,6 +82,31 @@ class GuidanceService:
         if not lang or lang.lower() not in self.SUPPORTED_LANGUAGES:
             return self.DEFAULT_LANGUAGE
         return lang.lower()
+
+    @classmethod
+    def normalize_crop(cls, crop_name: Optional[str]) -> Optional[str]:
+        """
+        Normalize user-provided crop string to a canonical crop identifier.
+        Returns None if the input is empty or unrecognized.
+        """
+        if not crop_name:
+            return None
+        cleaned = str(crop_name).strip().lower().replace("-", "_")
+        return cls.CROP_ALIASES.get(cleaned)
+
+    @classmethod
+    def is_crop_supported(cls, crop_name: Optional[str]) -> bool:
+        """Check if a crop identifier is within the supported prototype scope."""
+        canonical = cls.normalize_crop(crop_name)
+        return canonical in cls.SUPPORTED_CROPS
+
+    def get_crop_for_class(self, class_index: Union[int, str]) -> Optional[str]:
+        """
+        Retrieve the biological crop identifier associated with a model class index.
+        Returns None if class index is not found in the 38-class catalog.
+        """
+        str_index = str(class_index).strip()
+        return self._class_to_crop.get(str_index)
 
     @property
     def total_model_classes(self) -> int:
@@ -185,3 +239,43 @@ class GuidanceService:
             ),
             "data": None,
         }
+
+    def get_crop_mismatch_fallback(
+        self,
+        selected_crop: str,
+        predicted_crop: Optional[str],
+        model_class_id: Optional[str],
+        lang: str = "en"
+    ) -> Dict[str, Any]:
+        """
+        Structured fallback when the user's selected crop does not match the model's predicted crop.
+        Withholds disease-specific treatment guidance to prevent dangerous chemical misapplication.
+        Never claims the plant is healthy.
+        """
+        lang = self._normalize_lang(lang)
+        pred_display = predicted_crop.replace("_", " ").title() if predicted_crop else "Unknown"
+        selected_display = selected_crop.replace("_", " ").title()
+
+        return {
+            "status": "crop_mismatch",
+            "selected_crop": selected_crop,
+            "predicted_crop": predicted_crop,
+            "model_class_id": model_class_id,
+            "language": lang,
+            "is_healthy": None,
+            "message": (
+                f"Crop mismatch detected: You submitted this leaf as '{selected_display}', "
+                f"but the vision model detected visual features resembling '{model_class_id or 'an unlisted disease'}' "
+                f"({pred_display}). Disease-specific treatment guidance is withheld to prevent chemical misapplication. "
+                "User crop selection does not prove the botanical identity of the plant. "
+                "Please verify your crop selection or consult your local agricultural extension service for on-field diagnosis."
+                if lang == "en"
+                else f"Àìbáramu irúgbìn wáyé: O fi ewé yìí ránṣẹ́ gẹ́gẹ́ bí '{selected_display}', "
+                f"ṣùgbọ́n àwòṣe náà dá àwọn àmì àrùn mọ̀ tó jọ '{model_class_id or 'àrùn kan'}' "
+                f"({pred_display}). A dáwọ́ ìtọ́sọ́nà ìtọ́jú dúró láti dènà lílo oògùn tí kò tọ́. "
+                "Yíyan irúgbìn kò fi ìdí rẹ̀ múlẹ̀ pé irúgbìn náà jẹ́ bẹ́ẹ̀ gan-an. "
+                "Jọ̀wọ́ ṣàyẹ̀wò irúgbìn tí o yàn tàbí kí o kan sí òṣìṣẹ́ àgbẹ̀ agbègbè rẹ fún àyẹ̀wò lórí oko."
+            ),
+            "data": None,
+        }
+

@@ -25,6 +25,7 @@ cropscan-ai-backend/
 │   └── data/
 │       ├── __init__.py          # Static dataset package
 │       ├── class_indices.json   # Verified 38-class model index mapping
+│       ├── class_to_crop.json   # Explicit 38-class biological crop family mapping
 │       ├── disease_info_en.json # Agronomic guidance in English
 │       ├── disease_info_yo.json # Agronomic guidance in Yoruba (draft review)
 │       └── README.md            # Knowledge base architecture & caveats
@@ -177,11 +178,11 @@ Run the complete test suite using `pytest`:
 pytest -v
 ```
 
-All **42 automated tests** execute in `~3s`:
-- `tests/test_health.py`: Health endpoint and startup checks.
-- `tests/test_guidance.py`: Knowledge base retrieval, 38-class coverage, Yoruba/English consistency, and safe fallbacks.
-- `tests/test_predictor.py`: Preprocessing verification, real MobileNetV2 model loading, genuine inference on sample images, confidence threshold boundary behavior, and exception handling.
-- `tests/test_predict.py`: End-to-end endpoint tests for `POST /api/predict`, format verification, payload limit (10 MB), language localization, and error statuses (400, 413, 500, 503).
+All **58 automated tests** execute in `~27s`:
+- `tests/test_health.py`: Health endpoint and startup checks (3 tests).
+- `tests/test_guidance.py`: Knowledge base retrieval, 38-class coverage, explicit `class_to_crop` mapping, crop normalization and alias resolution, Yoruba/English consistency, and safe fallbacks (17 tests).
+- `tests/test_predictor.py`: Preprocessing verification, real MobileNetV2 model loading, genuine inference on sample images, confidence threshold boundary behavior, crop mismatch safety protection, and exception handling (16 tests).
+- `tests/test_predict.py`: End-to-end endpoint tests for `POST /api/predict`, required crop selection, unsupported crop rejection (cassava, yam), format verification, payload limit (10 MB), language localization, and error statuses (400, 413, 500, 503) (22 tests).
 
 ---
 
@@ -253,35 +254,50 @@ Invoke-RestMethod -Uri "http://127.0.0.1:5000/health" -Method Get
 
 ### 2. Leaf Image Upload & Prediction
 
-Receives a crop leaf photograph, performs security and format validation, runs genuine inference on MobileNetV2, and returns localized agronomic guidance in English or Yoruba.
+Receives a crop leaf photograph and user crop selection, performs security and format validation, runs genuine inference on MobileNetV2, protects against crop prediction mismatches, and returns localized agronomic guidance in English or Yoruba.
 
 - **URL**: `/api/predict`
 - **Method**: `POST`
 - **Content-Type**: `multipart/form-data`
 - **Parameters**:
   - `image` *(required, file)*: Image file (JPEG, PNG, or WebP). Maximum file size is **10 MB**.
+  - `crop` *(required, string)*: Target crop selection. Valid canonical identifiers are:
+    - `tomato` (Tomato)
+    - `maize` (Maize / Corn; aliases: `corn`, `agbado`)
+    - `bell_pepper` (Bell Pepper; aliases: `bell pepper`, `pepper`, `tatase`)
+    - `citrus` (Citrus / Orange; aliases: `orange`, `osan`)
+    - `potato` (Irish Potato; aliases: `irish potato`, `poteto`)
   - `lang` *(optional, string)*: Language for response guidance (`en` for English, `yo` for Yoruba). Defaults to `en`.
 
-#### Validation & Security Safeguards
-- **In-Memory Decoding**: Uploaded files are decoded strictly in memory using Pillow; files are never written to disk.
-- **Format Verification**: The true raster header and byte streams are verified (protecting against spoofed `.jpg` extensions containing text or scripts).
-- **Decompression Bomb Protection**: Guard rails enforce maximum dimensions (10,000 px) to prevent memory-exhaustion attacks.
-- **Genuine Model Inference**: Uses the pretrained MobileNetV2 model weights. Never fabricates predictions or confidence scores.
-- **Safe Fallback**: Predictions below the provisional confidence threshold (0.40) return `inconclusive_low_confidence` and safe fallback instructions without diagnosing.
+#### Validation & Safety Safeguards (Phase 5)
+- **Required Crop Selection**: Enforces explicit crop context from the farmer to prevent closed-set misdiagnosis across botanical families.
+- **Explicit 38-Class Biological Mapping**: Maps all 38 model class indices directly to their biological crop family (`app/data/class_to_crop.json`).
+- **Crop Mismatch Protection**: If the model's top predicted class belongs to a different crop family than the user's selection (e.g., user selects `tomato` but model predicts `Corn Common Rust` or `Apple Scab`), CropScan AI returns `assessment_status: "crop_mismatch"` and `crop_match: false`.
+- **Withheld Treatment Guidance**: Whenever a crop mismatch is detected, disease-specific treatment recommendations are strictly withheld (`is_healthy: null`, `data: null`) to prevent dangerous chemical misapplication.
+- **Safe Confidence Thresholding**: Predictions matching the selected crop but scoring below the provisional confidence threshold (`0.40`) return `inconclusive_low_confidence` and advisory guidance.
+- **In-Memory Decoding & Security**: Images are verified against true raster byte headers and decoded strictly in memory with decompression bomb guards (10,000 px max dimension).
+
+#### Crucial Machine Learning Safety Limitations
+> [!IMPORTANT]
+> - **Crop Selection Does NOT Prove Botanical Identity**: Crop selection is a user-asserted screening constraint, **NOT** automated botanical verification. The system cannot independently prove that an uploaded leaf truly belongs to the selected crop.
+> - **In-Crop Out-of-Distribution Vulnerability**: If a user submits weeds, non-leaf objects, or an unsupported disease while selecting a supported crop (e.g., submitting cassava as `tomato`), the closed-set model will still force an activation among the tomato classes. If that activation exceeds `0.40`, a false positive can occur.
+> - **Provisional Baseline**: Thresholds and mismatch rules are operational screening safeguards for prototyping and must never replace on-field diagnostic verification by agricultural extension officers.
 
 #### Example Request (PowerShell)
 ```powershell
 $form = @{
     image = Get-Item "C:\path\to\leaf_sample.jpg"
+    crop  = "tomato"
     lang  = "en"
 }
 Invoke-RestMethod -Uri "http://127.0.0.1:5000/api/predict" -Method Post -Form $form
 ```
 
-#### Example Response (Genuine Prediction - Confident with Guidance)
+#### Example Response (Genuine Prediction - Confident with Matching Crop)
 ```json
 {
   "status": "success",
+  "selected_crop": "tomato",
   "language": "en",
   "image_metadata": {
     "format": "JPEG",
@@ -292,13 +308,16 @@ Invoke-RestMethod -Uri "http://127.0.0.1:5000/api/predict" -Method Post -Form $f
   },
   "prediction": {
     "assessment_status": "confident",
+    "crop_match": true,
+    "selected_crop": "tomato",
+    "predicted_crop": "tomato",
     "model_name": "linkanjarad/mobilenet_v2_1.0_224-plant-disease-identification",
     "class_index": 29,
     "class_label": "Tomato with Early Blight",
     "confidence": 0.8845,
     "confidence_threshold": 0.40,
     "is_provisional_threshold": true,
-    "disclaimer": "Automated screening result only; not a confirmed agricultural diagnosis. Raw model scores are uncalibrated and do not guarantee accuracy. Always consult local agricultural extension officers before applying treatments.",
+    "disclaimer": "Automated screening result only; not a confirmed agricultural diagnosis. User crop selection does not prove or guarantee botanical crop identity. Raw model scores are uncalibrated. Always consult local agricultural extension officers before applying treatments.",
     "guidance": {
       "status": "success",
       "class_index": 29,
@@ -337,10 +356,49 @@ Invoke-RestMethod -Uri "http://127.0.0.1:5000/api/predict" -Method Post -Form $f
 }
 ```
 
+#### Example Response (Crop Mismatch - Treatment Guidance Withheld)
+```json
+{
+  "status": "success",
+  "selected_crop": "tomato",
+  "language": "en",
+  "image_metadata": {
+    "format": "JPEG",
+    "width": 800,
+    "height": 600,
+    "color_mode": "RGB",
+    "size_bytes": 98200
+  },
+  "prediction": {
+    "assessment_status": "crop_mismatch",
+    "crop_match": false,
+    "selected_crop": "tomato",
+    "predicted_crop": "apple",
+    "model_name": "linkanjarad/mobilenet_v2_1.0_224-plant-disease-identification",
+    "class_index": 0,
+    "class_label": "Apple with Apple Scab",
+    "confidence": 0.9120,
+    "confidence_threshold": 0.40,
+    "is_provisional_threshold": true,
+    "disclaimer": "Automated screening result only; not a confirmed agricultural diagnosis. User crop selection does not prove or guarantee botanical crop identity. Raw model scores are uncalibrated. Always consult local agricultural extension officers before applying treatments.",
+    "guidance": {
+      "status": "crop_mismatch",
+      "class_index": null,
+      "model_class_id": "Apple with Apple Scab",
+      "language": "en",
+      "is_healthy": null,
+      "message": "Crop mismatch detected. You selected 'tomato', but the model predicted characteristics resembling 'apple' ('Apple with Apple Scab'). Because of this mismatch, disease-specific treatment recommendations are withheld for safety. Please verify that the selected crop matches the photo, ensure only a single clear leaf is photographed, or consult a local agricultural extension specialist.",
+      "data": null
+    }
+  }
+}
+```
+
 #### Example Response (Inconclusive Low Confidence)
 ```json
 {
   "status": "success",
+  "selected_crop": "tomato",
   "language": "en",
   "image_metadata": {
     "format": "JPEG",
@@ -351,13 +409,16 @@ Invoke-RestMethod -Uri "http://127.0.0.1:5000/api/predict" -Method Post -Form $f
   },
   "prediction": {
     "assessment_status": "inconclusive_low_confidence",
+    "crop_match": true,
+    "selected_crop": "tomato",
+    "predicted_crop": "tomato",
     "model_name": "linkanjarad/mobilenet_v2_1.0_224-plant-disease-identification",
     "class_index": 30,
     "class_label": "Tomato with Late Blight",
     "confidence": 0.2168,
     "confidence_threshold": 0.40,
     "is_provisional_threshold": true,
-    "disclaimer": "Model confidence (21.68%) is below the provisional operational threshold (40.00%). Raw model scores are not calibrated probabilities of correctness. Confidence thresholding cannot reliably detect unsupported crops, non-leaf images, or out-of-distribution inputs. This result is inconclusive and must not be treated as a confirmed diagnosis.",
+    "disclaimer": "Model confidence (21.68%) is below the provisional operational threshold (40.00%). User crop selection does not prove or guarantee botanical crop identity. Raw model scores are not calibrated probabilities of correctness. Confidence thresholding cannot reliably detect unsupported crops, non-leaf images, or out-of-distribution inputs. This result is inconclusive and must not be treated as a confirmed diagnosis.",
     "guidance": {
       "status": "unreliable_assessment",
       "class_index": null,
@@ -368,6 +429,22 @@ Invoke-RestMethod -Uri "http://127.0.0.1:5000/api/predict" -Method Post -Form $f
       "data": null
     }
   }
+}
+```
+
+#### Example Error Response (Missing Crop - 400 Bad Request)
+```json
+{
+  "error": "missing_crop",
+  "message": "Field 'crop' is required. Supported crops are: 'tomato', 'maize', 'bell_pepper', 'citrus', 'potato'."
+}
+```
+
+#### Example Error Response (Unsupported Crop - 400 Bad Request)
+```json
+{
+  "error": "unsupported_crop",
+  "message": "Unsupported crop 'cassava'. Supported crops are: 'tomato', 'maize', 'bell_pepper', 'citrus', 'potato'."
 }
 ```
 

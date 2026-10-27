@@ -151,17 +151,23 @@ class PredictionService:
                 f"Failed to load vision model '{self.model_name}': {str(e)}"
             ) from e
 
-    def predict(self, image: Image.Image, lang: str = "en") -> Dict[str, Any]:
+    def predict(
+        self,
+        image: Image.Image,
+        selected_crop: Optional[str] = None,
+        lang: str = "en"
+    ) -> Dict[str, Any]:
         """
-        Executes genuine inference on a validated PIL Image.
+        Executes genuine inference on a validated PIL Image with crop mismatch protection.
 
         Args:
             image: A valid PIL Image instance.
+            selected_crop: Optional user-selected crop identifier (e.g. 'tomato', 'maize').
             lang: Localized guidance language ('en' or 'yo').
 
         Returns:
-            dict containing class index, label, raw model score, assessment status,
-            safety disclaimers, and localized agronomic guidance.
+            dict containing class index, label, selected_crop, predicted_crop, crop_match,
+            raw model score, assessment status, safety disclaimers, and localized agronomic guidance.
 
         Raises:
             ModelLoadError: If model cannot be loaded.
@@ -195,8 +201,15 @@ class PredictionService:
                 f"Inference execution failed during forward pass: {str(e)}"
             ) from e
 
-        # 3. Resolve class label from official mapping
+        # 3. Resolve class label and biological crop from official mappings
         class_label = self.guidance_service.get_class_label(predicted_class_index)
+        predicted_crop = self.guidance_service.get_crop_for_class(predicted_class_index)
+
+        normalized_selected_crop = (
+            self.guidance_service.normalize_crop(selected_crop)
+            if selected_crop
+            else None
+        )
 
         # Handle invalid model output index (outside 0-37)
         if class_label is None:
@@ -204,6 +217,9 @@ class PredictionService:
             return {
                 "assessment_status": "invalid_model_output",
                 "model_name": self.model_name,
+                "selected_crop": normalized_selected_crop or selected_crop,
+                "predicted_crop": None,
+                "crop_match": None,
                 "class_index": predicted_class_index,
                 "class_label": None,
                 "confidence": round(confidence_score, 4),
@@ -216,7 +232,45 @@ class PredictionService:
                 "guidance": fallback_guidance,
             }
 
-        # 4. Evaluate against provisional confidence threshold
+        # 4. Check for Crop Mismatch
+        is_crop_match = (
+            (normalized_selected_crop == predicted_crop)
+            if normalized_selected_crop is not None
+            else True
+        )
+
+        if not is_crop_match:
+            # Crop mismatch: user-selected crop differs from predicted class's crop family
+            mismatch_guidance = self.guidance_service.get_crop_mismatch_fallback(
+                selected_crop=normalized_selected_crop or selected_crop,
+                predicted_crop=predicted_crop,
+                model_class_id=class_label,
+                lang=lang,
+            )
+            selected_display = (normalized_selected_crop or selected_crop).replace("_", " ").title()
+            pred_display = predicted_crop.replace("_", " ").title() if predicted_crop else "Unknown"
+
+            return {
+                "assessment_status": "crop_mismatch",
+                "model_name": self.model_name,
+                "selected_crop": normalized_selected_crop or selected_crop,
+                "predicted_crop": predicted_crop,
+                "crop_match": False,
+                "class_index": predicted_class_index,
+                "class_label": class_label,
+                "confidence": round(confidence_score, 4),
+                "confidence_threshold": self.confidence_threshold,
+                "is_provisional_threshold": True,
+                "disclaimer": (
+                    f"Crop mismatch detected: The image was submitted as '{selected_display}', but model visual "
+                    f"features resemble '{class_label}' ({pred_display}). User crop selection does not prove "
+                    "ground-truth botanical identity. Disease-specific treatment guidance is withheld to prevent "
+                    "chemical misapplication. Consult a local agricultural extension officer."
+                ),
+                "guidance": mismatch_guidance,
+            }
+
+        # 5. Evaluate against provisional confidence threshold
         is_confident = confidence_score >= self.confidence_threshold
 
         if not is_confident:
@@ -225,6 +279,9 @@ class PredictionService:
             return {
                 "assessment_status": "inconclusive_low_confidence",
                 "model_name": self.model_name,
+                "selected_crop": normalized_selected_crop or selected_crop,
+                "predicted_crop": predicted_crop,
+                "crop_match": True,
                 "class_index": predicted_class_index,
                 "class_label": class_label,
                 "confidence": round(confidence_score, 4),
@@ -234,13 +291,13 @@ class PredictionService:
                     f"Model confidence ({confidence_score:.2%}) is below the provisional operational threshold "
                     f"({self.confidence_threshold:.2%}). Raw model scores are not calibrated probabilities of "
                     "correctness. Confidence thresholding cannot reliably detect unsupported crops, non-leaf "
-                    "images, or out-of-distribution inputs. This result is inconclusive and must not be treated "
-                    "as a confirmed diagnosis."
+                    "images, or out-of-distribution inputs. User crop selection does not prove botanical identity. "
+                    "This result is inconclusive and must not be treated as a confirmed diagnosis."
                 ),
                 "guidance": fallback_guidance,
             }
 
-        # 5. Retrieve localized guidance for confident predictions
+        # 6. Retrieve localized guidance for confident, matching predictions
         guidance_result = self.guidance_service.get_guidance_by_index(
             predicted_class_index, lang=lang
         )
@@ -254,6 +311,9 @@ class PredictionService:
         return {
             "assessment_status": assessment_status,
             "model_name": self.model_name,
+            "selected_crop": normalized_selected_crop or selected_crop,
+            "predicted_crop": predicted_crop,
+            "crop_match": True,
             "class_index": predicted_class_index,
             "class_label": class_label,
             "confidence": round(confidence_score, 4),
@@ -262,10 +322,12 @@ class PredictionService:
             "disclaimer": (
                 "Automated screening result only; not a confirmed agricultural diagnosis. "
                 "Raw model scores are uncalibrated and do not guarantee accuracy. "
+                "User crop selection does not prove botanical identity. "
                 "Always consult local agricultural extension officers before applying treatments."
             ),
             "guidance": guidance_result,
         }
+
 
 
 # Singleton instance container

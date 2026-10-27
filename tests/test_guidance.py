@@ -213,3 +213,83 @@ class TestGuidanceService:
         assert result_yo["status"] == "unreliable_assessment"
         assert result_yo["is_healthy"] is None
         assert result_yo["language"] == "yo"
+
+    # 7. Crop Mapping & Mismatch Fallback
+    def test_class_to_crop_mapping_coverage(self, guidance_service):
+        """Verify that all 38 model classes (indices 0 to 37) map to an explicit crop identifier."""
+        assert len(guidance_service._class_to_crop) == 38
+        for i in range(38):
+            crop = guidance_service.get_crop_for_class(i)
+            assert crop is not None, f"Missing crop for class index {i}"
+            assert isinstance(crop, str) and len(crop) > 0
+
+    def test_crop_normalization_supported_and_aliases(self, guidance_service):
+        """Verify normalization of supported crops and common user aliases."""
+        assert guidance_service.normalize_crop("tomato") == "tomato"
+        assert guidance_service.normalize_crop("Tomatoes") == "tomato"
+        assert guidance_service.normalize_crop("maize") == "maize"
+        assert guidance_service.normalize_crop("corn") == "maize"
+        assert guidance_service.normalize_crop("bell_pepper") == "bell_pepper"
+        assert guidance_service.normalize_crop("bell pepper") == "bell_pepper"
+        assert guidance_service.normalize_crop("pepper") == "bell_pepper"
+        assert guidance_service.normalize_crop("citrus") == "citrus"
+        assert guidance_service.normalize_crop("orange") == "citrus"
+        assert guidance_service.normalize_crop("potato") == "potato"
+        assert guidance_service.normalize_crop("Irish Potato") == "potato"
+
+    def test_crop_normalization_unsupported(self, guidance_service):
+        """Verify that unsupported crops normalize to None."""
+        assert guidance_service.normalize_crop("cassava") is None
+        assert guidance_service.normalize_crop("yam") is None
+        assert guidance_service.normalize_crop("wheat") is None
+        assert guidance_service.normalize_crop("") is None
+        assert guidance_service.normalize_crop(None) is None
+
+    def test_is_crop_supported(self, guidance_service):
+        """Verify boolean crop support checks."""
+        assert guidance_service.is_crop_supported("tomato") is True
+        assert guidance_service.is_crop_supported("corn") is True
+        assert guidance_service.is_crop_supported("bell pepper") is True
+        assert guidance_service.is_crop_supported("citrus") is True
+        assert guidance_service.is_crop_supported("potato") is True
+        assert guidance_service.is_crop_supported("cassava") is False
+        assert guidance_service.is_crop_supported("apple") is False
+
+    def test_get_crop_for_class_indices(self, guidance_service):
+        """Verify exact crop lookup for representative model class indices."""
+        assert guidance_service.get_crop_for_class(0) == "apple"
+        assert guidance_service.get_crop_for_class(7) == "maize"
+        assert guidance_service.get_crop_for_class(15) == "citrus"
+        assert guidance_service.get_crop_for_class(18) == "bell_pepper"
+        assert guidance_service.get_crop_for_class(21) == "potato"
+        assert guidance_service.get_crop_for_class(29) == "tomato"
+
+    def test_get_crop_mismatch_fallback_english_and_yoruba(self, guidance_service):
+        """Verify that crop mismatch fallback withholds guidance and never claims healthy."""
+        res_en = guidance_service.get_crop_mismatch_fallback(
+            selected_crop="tomato",
+            predicted_crop="apple",
+            model_class_id="Cedar Apple Rust",
+            lang="en"
+        )
+        assert res_en["status"] == "crop_mismatch"
+        assert res_en["selected_crop"] == "tomato"
+        assert res_en["predicted_crop"] == "apple"
+        assert res_en["model_class_id"] == "Cedar Apple Rust"
+        assert res_en["is_healthy"] is None
+        assert res_en["data"] is None
+        assert "Crop mismatch detected" in res_en["message"]
+        assert "withheld" in res_en["message"]
+
+        res_yo = guidance_service.get_crop_mismatch_fallback(
+            selected_crop="tomato",
+            predicted_crop="apple",
+            model_class_id="Cedar Apple Rust",
+            lang="yo"
+        )
+        assert res_yo["status"] == "crop_mismatch"
+        assert res_yo["language"] == "yo"
+        assert res_yo["is_healthy"] is None
+        assert res_yo["data"] is None
+        assert "Àìbáramu irúgbìn wáyé" in res_yo["message"]
+

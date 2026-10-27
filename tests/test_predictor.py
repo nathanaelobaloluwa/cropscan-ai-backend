@@ -225,13 +225,92 @@ class TestPredictionServiceUnitMocks:
         assert result["class_label"] is None
         assert result["guidance"]["status"] == "unreliable_assessment"
 
+    def test_crop_mismatch_withholds_disease_guidance(self, mock_predictor):
+        """
+        Verify that a crop mismatch (e.g. user selected tomato, but model predicted apple)
+        returns crop_mismatch, withholds treatment guidance, and never claims healthy.
+        """
+        mock_output = MagicMock()
+        # Class index 2 is Cedar Apple Rust (crop: apple)
+        mock_output.logits = self._create_mock_logits(top_index=2, top_score=0.85)
+        mock_predictor._model.return_value = mock_output
+
+        img = Image.new("RGB", (100, 100))
+        result = mock_predictor.predict(img, selected_crop="tomato", lang="en")
+
+        assert result["assessment_status"] == "crop_mismatch"
+        assert result["crop_match"] is False
+        assert result["selected_crop"] == "tomato"
+        assert result["predicted_crop"] == "apple"
+        assert result["class_index"] == 2
+        assert result["class_label"] == "Cedar Apple Rust"
+        assert result["confidence"] == 0.85
+
+        guidance = result["guidance"]
+        assert guidance["status"] == "crop_mismatch"
+        assert guidance["is_healthy"] is None
+        assert guidance["data"] is None
+        assert "withheld" in guidance["message"].lower()
+        assert "does not prove" in result["disclaimer"].lower()
+
+    def test_crop_mismatch_yoruba(self, mock_predictor):
+        """Verify that crop mismatch returns localized Yoruba explanation."""
+        mock_output = MagicMock()
+        # Class index 8 is Corn Common Rust (crop: maize)
+        mock_output.logits = self._create_mock_logits(top_index=8, top_score=0.92)
+        mock_predictor._model.return_value = mock_output
+
+        img = Image.new("RGB", (100, 100))
+        result = mock_predictor.predict(img, selected_crop="tomato", lang="yo")
+
+        assert result["assessment_status"] == "crop_mismatch"
+        assert result["crop_match"] is False
+        assert result["selected_crop"] == "tomato"
+        assert result["predicted_crop"] == "maize"
+        assert result["guidance"]["status"] == "crop_mismatch"
+        assert result["guidance"]["is_healthy"] is None
+        assert result["guidance"]["data"] is None
+        assert "Àìbáramu irúgbìn wáyé" in result["guidance"]["message"]
+
+    def test_crop_match_confident_returns_treatment_guidance(self, mock_predictor):
+        """Verify matching crop selection with high confidence returns confident status and treatment."""
+        mock_output = MagicMock()
+        mock_output.logits = self._create_mock_logits(top_index=29, top_score=0.88)
+        mock_predictor._model.return_value = mock_output
+
+        img = Image.new("RGB", (100, 100))
+        result = mock_predictor.predict(img, selected_crop="tomato", lang="en")
+
+        assert result["assessment_status"] == "confident"
+        assert result["crop_match"] is True
+        assert result["selected_crop"] == "tomato"
+        assert result["predicted_crop"] == "tomato"
+        assert result["guidance"]["status"] == "success"
+        assert result["guidance"]["data"]["disease_id"] == "tomato_early_blight"
+
+    def test_crop_match_low_confidence(self, mock_predictor):
+        """Verify matching crop selection below confidence threshold returns inconclusive_low_confidence."""
+        mock_output = MagicMock()
+        mock_output.logits = self._create_mock_logits(top_index=29, top_score=0.35)
+        mock_predictor._model.return_value = mock_output
+
+        img = Image.new("RGB", (100, 100))
+        result = mock_predictor.predict(img, selected_crop="tomato", lang="en")
+
+        assert result["assessment_status"] == "inconclusive_low_confidence"
+        assert result["crop_match"] is True
+        assert result["selected_crop"] == "tomato"
+        assert result["confidence"] == 0.35
+        assert result["guidance"]["status"] == "unreliable_assessment"
+
     def test_inference_execution_exception_handling(self, mock_predictor):
         """Verify that forward pass failures raise InferenceExecutionError."""
         mock_predictor._model.side_effect = RuntimeError("CUDA/CPU tensor memory error")
 
         img = Image.new("RGB", (100, 100))
         with pytest.raises(InferenceExecutionError) as exc_info:
-            mock_predictor.predict(img, lang="en")
+            mock_predictor.predict(img, selected_crop="tomato", lang="en")
 
         assert "Inference execution failed" in str(exc_info.value)
         assert exc_info.value.status_code == 500
+
