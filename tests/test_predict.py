@@ -551,7 +551,11 @@ class TestPredictEndpoint:
 
     # 8. HTTP Method Constraints
     def test_get_method_not_allowed(self, client):
-        """Verify GET /api/predict returns 405 Method Not Allowed."""
+        """Verify GET /api/predict returns 405 Method Not Allowed with standardized JSON."""
         response = client.get("/api/predict")
         assert response.status_code == 405
+        assert response.is_json
+        body = response.get_json()
+        assert body["error"] == "method_not_allowed"
+        assert "method is not allowed" in body["message"].lower()
 
