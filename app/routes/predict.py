@@ -1,3 +1,5 @@
+import logging
+
 from flask import Blueprint, jsonify, request
 from werkzeug.exceptions import RequestEntityTooLarge
 
@@ -9,6 +11,8 @@ from app.services.predictor import (
     PredictionError,
     get_prediction_service,
 )
+
+logger = logging.getLogger(__name__)
 
 predict_bp = Blueprint("predict", __name__, url_prefix="/api")
 
@@ -105,10 +109,11 @@ def predict():
             "error": e.error_code,
             "message": e.message,
         }), e.status_code
-    except Exception as e:
+    except Exception:
+        logger.exception("An unexpected error occurred during prediction.")
         return jsonify({
             "error": "unexpected_inference_error",
-            "message": f"An unexpected error occurred during prediction: {str(e)}",
+            "message": "An unexpected error occurred during prediction.",
         }), 500
 
     # 6. Return Genuine Prediction, Crop Mismatch Protection & Localized Guidance

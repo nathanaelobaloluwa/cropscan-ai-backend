@@ -362,6 +362,43 @@ class TestPredictEndpoint:
             body = response.get_json()
             assert body["error"] == "inference_failed"
 
+    def test_unexpected_inference_exception_sanitized_and_logged(self, client, caplog):
+        """
+        Verify that an unhandled Exception during inference:
+        1. Returns HTTP 500 with error 'unexpected_inference_error'.
+        2. Sanitizes the message and does NOT expose internal exception details (e.g. PRIVATE_INTERNAL_DETAIL_123).
+        3. Logs the full exception traceback on the server.
+        """
+        import logging
+        img_buf = create_in_memory_image("JPEG", size=(64, 64))
+        data = {
+            "image": (img_buf, "leaf.jpg", "image/jpeg"),
+            "crop": "tomato",
+        }
+        secret_detail = "PRIVATE_INTERNAL_DETAIL_123: /internal/weights/cuda_tensor_core_dump.bin"
+
+        with caplog.at_level(logging.ERROR):
+            with patch("app.routes.predict.get_prediction_service") as mock_get_svc:
+                mock_svc = MagicMock()
+                mock_svc.predict.side_effect = RuntimeError(secret_detail)
+                mock_get_svc.return_value = mock_svc
+
+                response = client.post(
+                    "/api/predict",
+                    data=data,
+                    content_type="multipart/form-data"
+                )
+
+        assert response.status_code == 500
+        body = response.get_json()
+        assert body["error"] == "unexpected_inference_error"
+        assert "PRIVATE_INTERNAL_DETAIL_123" not in body["message"]
+        assert "/internal/weights" not in body["message"]
+        assert body["message"] == "An unexpected error occurred during prediction."
+
+        # Verify the exception details and traceback are preserved in server logs
+        assert "PRIVATE_INTERNAL_DETAIL_123" in caplog.text
+
     # 4. Rejection of Missing or Empty Files
     def test_missing_image_field_returns_400(self, client):
         """Verify request with missing image field is rejected with 400."""
