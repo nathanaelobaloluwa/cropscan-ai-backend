@@ -1,27 +1,27 @@
 # CropScan AI - Backend
 
-CropScan AI is a plant disease detection backend API designed to empower farmers and agricultural stakeholders. Farmers can submit crop leaf images, obtain fast predictions from an open-weight vision model, and access actionable disease treatment and prevention recommendations available in both English and Yoruba.
+CropScan AI is a plant disease detection and localized agronomic advisory backend API designed to empower smallholder farmers and agricultural stakeholders in West Africa. Farmers can submit leaf photographs, select their target crop, obtain fast inference from an open-weight vision model, and access actionable disease treatment and prevention recommendations available in both English and Yoruba.
 
 ---
 
-## Architecture & Project Structure
+## 1. Architecture & Project Structure
 
-The codebase is organized using Flask's **Application Factory Pattern** and **Blueprints** to ensure modularity, ease of testing, and maintainability across hackathon development phases:
+The codebase is organized using Flask's **Application Factory Pattern** and **Blueprints** to ensure modularity, maintainability, clean separation of concerns, and isolated automated testing:
 
 ```text
 cropscan-ai-backend/
 ├── app/
-│   ├── __init__.py              # Application factory (create_app)
-│   ├── config.py                # Environment configurations (10 MB limit, model & threshold settings)
+│   ├── __init__.py              # Application factory (create_app), error handlers, and production safeguards
+│   ├── config.py                # Environment configurations, port validation, secret hardening & threshold bounds
 │   ├── routes/
 │   │   ├── __init__.py          # Blueprint aggregation
 │   │   ├── health.py            # Health check endpoint (GET /health)
-│   │   └── predict.py           # Image upload & prediction endpoint (POST /api/predict)
+│   │   └── predict.py           # Image upload, crop validation & prediction endpoint (POST /api/predict)
 │   ├── services/
 │   │   ├── __init__.py          # Service layer exports
-│   │   ├── guidance.py          # GuidanceService (English & Yoruba resolution)
-│   │   ├── image_validator.py   # In-memory image decoding, format & security validation
-│   │   └── predictor.py         # PredictionService (MobileNetV2 inference, threshold & guidance)
+│   │   ├── guidance.py          # GuidanceService (English & Yoruba crop/disease resolution)
+│   │   ├── image_validator.py   # In-memory image decoding, format verification & security guards
+│   │   └── predictor.py         # PredictionService (MobileNetV2 inference, threshold & guidance integration)
 │   └── data/
 │       ├── __init__.py          # Static dataset package
 │       ├── class_indices.json   # Verified 38-class model index mapping
@@ -31,39 +31,40 @@ cropscan-ai-backend/
 │       └── README.md            # Knowledge base architecture & caveats
 ├── tests/
 │   ├── __init__.py
-│   ├── conftest.py              # Pytest fixtures (app, client)
-│   ├── test_health.py           # Health check & startup unit tests
-│   ├── test_guidance.py         # Knowledge base & GuidanceService unit tests
-│   ├── test_predict.py          # Endpoint integration & upload security tests
-│   └── test_predictor.py        # ML service unit & genuine inference tests
-├── .env.example                 # Template for local environment variables
-├── .gitignore                   # Ignored files (venv, env, caches)
-├── requirements.txt             # Core dependencies (Flask, Pillow, PyTorch, Transformers, pytest)
-├── run.py                       # Server entry point
+│   ├── conftest.py              # Pytest fixtures (clean app and test client)
+│   ├── test_config.py           # Configuration validation, port parsing & production secret unit/integration tests
+│   ├── test_guidance.py         # Knowledge base retrieval, crop mapping & GuidanceService unit tests
+│   ├── test_health.py           # Health endpoint, routing, 404, 405, and 500 error handler tests
+│   ├── test_predict.py          # Endpoint integration, crop selection, upload security & error handling tests
+│   └── test_predictor.py        # ML service unit tests, boundary tests & genuine inference tests
+├── .env.example                 # Documented template for local environment variables
+├── .gitignore                   # Version control ignore rules (venv, .env, caches)
+├── requirements.txt             # Pinned core dependencies (Flask, Pillow, PyTorch, Transformers, pytest)
+├── run.py                       # Local development server entry point with validated port handling
 └── README.md                    # Project documentation
 ```
 
 ### Decoupled Data Principles
-- **Model Class IDs**: Exact prediction label from the model (e.g., `"Tomato with Early Blight"`).
-- **Disease IDs**: Standardized machine slugs (e.g., `"tomato_early_blight"`).
+- **Model Class IDs**: Exact label produced by the vision model (e.g., `"Tomato with Early Blight"`).
+- **Disease IDs**: Standardized, language-agnostic machine slugs (e.g., `"tomato_early_blight"`).
 - **Display Names**: Farmer-friendly localized titles (e.g., `"Early Blight"` or `"Àrùn Èérún Tòmátò"`).
-- **Guidance Records**: Conservative cultural and preventive measures referencing verified agricultural bodies (FAO, IITA, CIMMYT, CIP, WorldVeg).
+- **Guidance Records**: Conservative cultural and preventive measures referencing established agricultural bodies (FAO, IITA, CIMMYT, CIP, WorldVeg).
 
 ---
 
-## Machine Learning Vision Model & Inference
+## 2. Machine Learning Vision Model & Inference
 
 ### Model Specifications
-- **Model Name**: `linkanjarad/mobilenet_v2_1.0_224-plant-disease-identification`
-- **Model Architecture**: MobileNetV2 for Image Classification (`MobileNetV2ForImageClassification`)
-- **Base Model**: `google/mobilenet_v2_1.0_224` (Apache 2.0 license)
+- **Model Identifier**: `linkanjarad/mobilenet_v2_1.0_224-plant-disease-identification`
+- **Architecture**: MobileNetV2 for Image Classification (`MobileNetV2ForImageClassification`)
+- **Base Architecture**: `google/mobilenet_v2_1.0_224` (Apache 2.0 license)
 - **Training Dataset**: Kaggle New Plant Diseases Dataset (PlantVillage, CC0 Public Domain)
 - **Model Size**: ~14.2 MB (`model.safetensors`, 314 weight tensors)
 - **Default Device**: CPU inference (`PREDICTOR_DEVICE=cpu`)
-- **Singleton Lifecycle**: Model weights and preprocessor are loaded once into memory upon service initialization or first request, preventing per-request reloading overhead.
+- **Singleton Lifecycle**: Model weights and image processor are loaded once into memory on service initialization or first request, preventing per-request reloading overhead.
 
-### Documented & Verified Preprocessing Pipeline
-CropScan AI reproduces the exact preprocessing pipeline from the model configuration without duplicate normalization:
+### Verified Preprocessing Pipeline
+CropScan AI reproduces the exact preprocessing pipeline from the official model configuration without duplicate normalization:
 1. **Shortest-edge resize**: 256 pixels
 2. **Resampling method**: Bilinear interpolation (`PIL.Image.BILINEAR`)
 3. **Center crop**: 224 × 224 pixels
@@ -71,16 +72,17 @@ CropScan AI reproduces the exact preprocessing pipeline from the model configura
 5. **Channel normalization**: Mean `[0.5, 0.5, 0.5]` and standard deviation `[0.5, 0.5, 0.5]` per RGB channel
 6. **Backend Implementation**: Powered by `MobileNetV2ImageProcessorPil` (Pillow-native backend, avoiding the heavy `torchvision` dependency).
 
-### Confidence Thresholding & Uncertainty Limitations
-- **Provisional Threshold**: Defaulting to `0.40` (configurable via `PREDICTION_CONFIDENCE_THRESHOLD`).
-- **Provisional Nature**: This threshold is strictly provisional for screening in this hackathon prototype and has not been validated through agricultural field trials.
+### Confidence Thresholding & Safeguards
+- **Provisional Threshold**: Defaults to `0.40` (configurable via `PREDICTION_CONFIDENCE_THRESHOLD`).
+- **Hardened Validation**: Threshold configuration is strictly validated to a finite float in `[0.0, 1.0]`. Missing, empty, non-numeric (`"abc"`), `NaN`, `Infinity`, `-Infinity`, or out-of-range values log a descriptive warning and safely fall back to `0.40`.
+- **Provisional Baseline**: This threshold is strictly provisional for screening in this prototype and has not been validated through agricultural field trials.
 - **Uncalibrated Scores**: Raw model scores are computed via Softmax over 38 logits. They represent relative model activation among trained classes, **not calibrated probabilities** that the diagnosis is correct.
 - **Not a Confirmed Diagnosis**: CropScan AI provides automated screening aids, not a botanical or phytopathological diagnosis. Farmers must consult local agricultural extension officers before applying chemical treatments.
 - **Out-of-Distribution Vulnerability**: Confidence thresholding alone **cannot reliably detect** unsupported crops (e.g., cassava, yam), non-leaf images, or arbitrary out-of-distribution inputs. An image of a shoe or weeds may still yield an arbitrary prediction if forced through closed-set softmax classification.
 
 ---
 
-## Initial Prototype Scope (Nigerian-Relevant Crops)
+## 3. Initial Prototype Scope (Nigerian-Relevant Crops)
 
 The initial knowledge base focuses on high-priority Nigerian staple crops supported by the 38-class model:
 - **Maize / Corn (Àgbàdo)**: Cercospora / Gray Leaf Spot, Common Rust, Northern Leaf Blight, and Healthy.
@@ -94,25 +96,7 @@ The initial knowledge base focuses on high-priority Nigerian staple crops suppor
 
 ---
 
-## Model Licensing Uncertainty & Known Limitations
-
-1. **Licensing Status**:
-   - The fine-tuned weights (`linkanjarad/mobilenet_v2_1.0_224-plant-disease-identification`) carry a license metadata tag of **`other`** in the Hugging Face repository.
-   - While the base architecture (`google/mobilenet_v2_1.0_224`) is Apache 2.0 and the PlantVillage dataset was released under Public Domain (CC0 1.0), the fine-tuned repository lacks an explicit license file defining commercial redistribution rights.
-   - **Prototype constraint**: The model weights are suitable for hackathon demonstration and academic evaluation, but commercial production requires formal author clarification or custom training from CC0 weights.
-
-2. **Evaluation Accuracy vs. Real-World Field Performance**:
-   - The reported evaluation accuracy of **95.41%** reflects validation on laboratory-captured leaves on solid backgrounds.
-   - **Real-world field performance is unverified**: In-field photographs containing complex backgrounds (soil, fingers, weeds, varied sunlight) typically exhibit lower accuracy.
-   - CropScan AI treats model predictions as diagnostic screening aids, not definitive agronomic diagnoses.
-
-3. **Translation Review Status**:
-   - All Yoruba guidance records carry `"translation_review_status": "draft_translation_pending_native_expert_review"` and `"expert_review_required": true`.
-   - Content should be formally reviewed by bilingual agronomists before public release.
-
----
-
-## Prerequisites
+## 4. Prerequisites
 
 - **Python 3.11+** (verified on Python 3.11.9)
 - **Git**
@@ -120,7 +104,7 @@ The initial knowledge base focuses on high-priority Nigerian staple crops suppor
 
 ---
 
-## Getting Started
+## 5. Local Setup & Installation
 
 ### 1. Clone the Repository
 ```powershell
@@ -128,42 +112,45 @@ git clone https://github.com/nathanaelobaloluwa/cropscan-ai-backend.git
 cd cropscan-ai-backend
 ```
 
-### 2. Activate the Virtual Environment
-
+### 2. Create and Activate Virtual Environment
 On Windows PowerShell:
 ```powershell
+python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 ```
 
-> **Note**: If PowerShell displays an execution policy error, enable local script execution for the current user once:
+> **Note**: If PowerShell displays an execution policy error, enable script execution for the current user once:
 > ```powershell
 > Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 > ```
 
 ### 3. Install Dependencies
-
-Install the pinned dependencies:
+Install the pinned dependencies from `requirements.txt`:
 ```powershell
 pip install -r requirements.txt
 ```
 
 ### 4. Configure Environment Variables
-
-Create a local `.env` file from the provided template:
+Copy the provided `.env.example` file to `.env`:
 ```powershell
 Copy-Item .env.example .env
 ```
 
 ---
 
-## Running the Server
+## 6. Running the Local Development Server
 
-Start the Flask development server:
+Start the local server using `run.py`:
 ```powershell
 python run.py
 ```
 
-The server will start locally:
+Or using Flask's CLI:
+```powershell
+flask --app app run --debug
+```
+
+Expected startup output:
 ```text
 -> Starting CropScan AI Backend (development environment)
 -> Serving on http://127.0.0.1:5000
@@ -171,72 +158,59 @@ The server will start locally:
 
 ---
 
-## Running the Automated Tests
+## 7. Running the Automated Test Suite
 
-Run the complete test suite using `pytest`:
+Run the complete regression test suite using `pytest`:
 ```powershell
-pytest -v
+.\.venv\Scripts\python.exe -m pytest -v
 ```
 
-All **58 automated tests** execute in `~27s`:
-- `tests/test_health.py`: Health endpoint and startup checks (3 tests).
-- `tests/test_guidance.py`: Knowledge base retrieval, 38-class coverage, explicit `class_to_crop` mapping, crop normalization and alias resolution, Yoruba/English consistency, and safe fallbacks (17 tests).
-- `tests/test_predictor.py`: Preprocessing verification, real MobileNetV2 model loading, genuine inference on sample images, confidence threshold boundary behavior, crop mismatch safety protection, and exception handling (16 tests).
-- `tests/test_predict.py`: End-to-end endpoint tests for `POST /api/predict`, required crop selection, unsupported crop rejection (cassava, yam), format verification, payload limit (10 MB), language localization, and error statuses (400, 413, 500, 503) (22 tests).
+All **91 automated tests** execute in `~6s` with 100% pass rate:
+- `tests/test_config.py` (30 tests): Port validation, confidence threshold validation, production secret validation, and app factory config loading.
+- `tests/test_guidance.py` (17 tests): Knowledge base retrieval, 38-class biological mapping, crop normalization and alias resolution, Yoruba/English consistency, and safe fallbacks.
+- `tests/test_health.py` (5 tests): Health endpoint, startup checks, 404 Not Found, 405 Method Not Allowed, and 500 server error JSON response standardization.
+- `tests/test_predict.py` (22 tests): End-to-end `POST /api/predict` tests, required crop selection, unsupported crop rejection, format validation, 10 MB payload ceiling, language localization, and error handling.
+- `tests/test_predictor.py` (17 tests): Exact preprocessor verification, real MobileNetV2 weight loading, genuine inference on real sample images, threshold boundaries, crop mismatch protection, and exception handling.
+
+To run focused test suites:
+```powershell
+.\.venv\Scripts\python.exe -m pytest tests/test_config.py -v
+.\.venv\Scripts\python.exe -m pytest tests/test_predict.py -v
+```
 
 ---
 
-## Real Leaf Image Empirical Validation (Phase 4)
+## 8. Environment Variable Reference
 
-To validate live model inference and end-to-end endpoint integration prior to adding new features, 7 authentic real leaf photographs were evaluated through the actual `POST /api/predict` endpoint using the loaded MobileNetV2 model weights.
+The application uses `python-dotenv` to load environment variables from `.env` if present. Supported configuration variables:
 
-### Image Sources & Licensing
-1. **PlantVillage Dataset** (`spMohanty/PlantVillage-Dataset`): Licensed under **CC0 1.0 Universal (Public Domain Dedication)**. Laboratory-photographed leaves on uniform backgrounds across standardized disease and healthy classes.
-2. **Wikimedia Commons** (`File:Cassava plant leaf.jpg`): Licensed under **CC BY-SA 4.0**. High-resolution in-field photograph of a cassava (*Manihot esculenta*) leaf, an African staple crop completely absent from the 38-class PlantVillage dataset.
-
-### Empirical Test Matrix & Observed Outputs
-
-| Test Image | Crop & True Condition | Expected Label | Predicted Class | Raw Score | Assessment Status | Localized Guidance | Validation Outcome |
-| :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- |
-| `tomato_early_blight.jpg` | Tomato (Diseased) | Tomato with Early Blight | Tomato with Early Blight (idx 29) | `0.8394` | `confident` | `success` (`tomato_early_blight`) | **Accurate detection & guidance** |
-| `tomato_healthy.jpg` | Tomato (Healthy) | Healthy Tomato Plant | Healthy Tomato Plant (idx 37) | `1.0000` | `confident` | `success` (`healthy_tomato`) | **Accurate detection (no false alarm)** |
-| `corn_common_rust.jpg` | Maize (Diseased) | Corn (Maize) with Common Rust | Corn with Common Rust (idx 8) | `0.9989` | `confident` | `success` (`corn_common_rust`) | **Accurate detection & guidance** |
-| `bell_pepper_healthy.jpg` | Bell Pepper (Healthy) | Healthy Bell Pepper Plant | Healthy Bell Pepper (idx 19) | `0.9999` | `confident` | `success` (`healthy_pepper`) | **Accurate detection (no false alarm)** |
-| `potato_late_blight.jpg` | Potato (Diseased) | Potato with Late Blight | Potato with Late Blight (idx 21) | `0.6684` | `confident` | `success` (`potato_late_blight`) | **Accurate detection & guidance** |
-| `apple_scab.jpg` | Apple (Diseased, Out-of-Scope) | Apple Scab (idx 0) | Apple Scab (idx 0) | `0.9979` | `recognized_unsupported_crop` | `recognized_unsupported_crop` | **Safe scope separation (never claims healthy)** |
-| `cassava_leaf_unsupported.jpg` | Cassava (Unsupported Crop) | Out-of-Distribution (None) | Cedar Apple Rust (idx 2) | `0.3192` | `inconclusive_low_confidence` | `unreliable_assessment` | **Safely rejected via threshold (0.3192 < 0.40)** |
-
-### Critical Empirical Insights & Limitations
-
-1. **Closed-Set Vulnerability on Out-of-Distribution Inputs**:
-   - Because MobileNetV2 uses a closed-set softmax classification head over 38 classes, any image passed into the model is mathematically forced to distribute probability across those 38 classes.
-   - For the **Cassava leaf**, the model assigned `0.3192` to `"Cedar Apple Rust"` (index 2).
-   - Because `0.3192` fell below the provisional threshold (`0.40`), CropScan AI safely prevented a false diagnosis and returned an inconclusive advisory response (`is_healthy: None`).
-   - **Crucial Caution**: Confidence thresholding alone is **not** an out-of-distribution detector. A different unsupported crop or complex background image could easily produce an activation $\ge 0.40$, resulting in a confident misdiagnosis.
-
-2. **Provisional Nature of the 0.40 Threshold**:
-   - The threshold of `0.40` was selected as a provisional operational baseline. It is **not clinically or statistically validated**.
-   - Setting a threshold cannot be validated on 7 images; genuine operational calibration requires hundreds of field-collected images across target ecologies.
-
-3. **Architectural Recommendations for Future Phases**:
-   - **Frontend Crop Selector**: Require users to specify their target crop (e.g., Tomato, Maize) before diagnosis. If the model's top prediction does not match the user's selected crop family, the system should reject the image as mismatched.
-   - **Two-Stage Classifier Pipeline**: Introduce an upstream lightweight crop-species classifier (or open-set anomaly detector) to reject non-leaf or unsupported crops (e.g., cassava, yam, weeds) before disease inference.
+| Variable | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `FLASK_APP` | string | `run.py` | Entry point module for Flask CLI. |
+| `FLASK_ENV` | string | `development` | Environment mode (`development`, `testing`, `production`). In `production`, strict `SECRET_KEY` validation is enforced. |
+| `HOST` | string | `127.0.0.1` | Network interface to bind. Use `0.0.0.0` in Docker or PaaS environments. |
+| `PORT` | integer | `5000` | TCP port (`1` to `65535`). Validated at startup; invalid or out-of-range values log a warning and safely fall back to `5000`. |
+| `SECRET_KEY` | string | `dev-secret-key-cropscan` | Cryptographic secret. In `production`, this **must** be set to a custom, non-default secret key. If missing or default, startup aborts. |
+| `CROPSCAN_MODEL_NAME` | string | `linkanjarad/mobilenet_v2_1.0_224-plant-disease-identification` | Hugging Face model repository or local directory path. |
+| `PREDICTOR_DEVICE` | string | `cpu` | PyTorch inference device (`cpu` or `cuda`). |
+| `PREDICTION_CONFIDENCE_THRESHOLD` | float | `0.40` | Screening confidence threshold in `[0.0, 1.0]`. Validated at startup; invalid values fall back to `0.40` with a warning. |
 
 ---
 
-
-## Available Endpoints
+## 9. API Reference
 
 ### 1. Health Check
+Checks the status and process liveness of the CropScan AI backend service.
 
-Checks the status and availability of the CropScan AI backend service.
+> [!NOTE]
+> **What `/health` Verifies**: This endpoint verifies that the Flask application process is active and responding to HTTP requests. It **does NOT** execute model inference, benchmark GPU availability, or connect to external databases.
 
 - **URL**: `/health`
 - **Method**: `GET`
 - **Response Format**: `application/json`
 - **Status Code**: `200 OK`
 
-#### Example Request (PowerShell)
+#### Example Request
 ```powershell
 Invoke-RestMethod -Uri "http://127.0.0.1:5000/health" -Method Get
 ```
@@ -253,15 +227,14 @@ Invoke-RestMethod -Uri "http://127.0.0.1:5000/health" -Method Get
 ---
 
 ### 2. Leaf Image Upload & Prediction
-
-Receives a crop leaf photograph and user crop selection, performs security and format validation, runs genuine inference on MobileNetV2, protects against crop prediction mismatches, and returns localized agronomic guidance in English or Yoruba.
+Receives a crop leaf photograph and target crop selection via multipart form-data, performs raster validation, executes MobileNetV2 vision inference, protects against crop mismatches, and returns localized agronomic guidance in English or Yoruba.
 
 - **URL**: `/api/predict`
 - **Method**: `POST`
 - **Content-Type**: `multipart/form-data`
-- **Parameters**:
+- **Form Parameters**:
   - `image` *(required, file)*: Image file (JPEG, PNG, or WebP). Maximum file size is **10 MB**.
-  - `crop` *(required, string)*: Target crop selection. Valid canonical identifiers are:
+  - `crop` *(required, string)*: Target crop selection. Valid canonical identifiers and aliases:
     - `tomato` (Tomato)
     - `maize` (Maize / Corn; aliases: `corn`, `agbado`)
     - `bell_pepper` (Bell Pepper; aliases: `bell pepper`, `pepper`, `tatase`)
@@ -269,19 +242,13 @@ Receives a crop leaf photograph and user crop selection, performs security and f
     - `potato` (Irish Potato; aliases: `irish potato`, `poteto`)
   - `lang` *(optional, string)*: Language for response guidance (`en` for English, `yo` for Yoruba). Defaults to `en`.
 
-#### Validation & Safety Safeguards (Phase 5)
-- **Required Crop Selection**: Enforces explicit crop context from the farmer to prevent closed-set misdiagnosis across botanical families.
+#### Validation & Safety Safeguards
+- **Required Crop Selection**: Enforces explicit crop context from the farmer to prevent cross-family misdiagnosis.
 - **Explicit 38-Class Biological Mapping**: Maps all 38 model class indices directly to their biological crop family (`app/data/class_to_crop.json`).
 - **Crop Mismatch Protection**: If the model's top predicted class belongs to a different crop family than the user's selection (e.g., user selects `tomato` but model predicts `Corn Common Rust` or `Apple Scab`), CropScan AI returns `assessment_status: "crop_mismatch"` and `crop_match: false`.
-- **Withheld Treatment Guidance**: Whenever a crop mismatch is detected, disease-specific treatment recommendations are strictly withheld (`is_healthy: null`, `data: null`) to prevent dangerous chemical misapplication.
-- **Safe Confidence Thresholding**: Predictions matching the selected crop but scoring below the provisional confidence threshold (`0.40`) return `inconclusive_low_confidence` and advisory guidance.
+- **Withheld Treatment Guidance**: Whenever a crop mismatch occurs, disease treatment recommendations are strictly withheld (`is_healthy: null`, `data: null`) to prevent dangerous chemical misapplication.
+- **Safe Confidence Thresholding**: Predictions matching the selected crop but scoring below the validated threshold (`0.40`) return `inconclusive_low_confidence` and advisory guidance.
 - **In-Memory Decoding & Security**: Images are verified against true raster byte headers and decoded strictly in memory with decompression bomb guards (10,000 px max dimension).
-
-#### Crucial Machine Learning Safety Limitations
-> [!IMPORTANT]
-> - **Crop Selection Does NOT Prove Botanical Identity**: Crop selection is a user-asserted screening constraint, **NOT** automated botanical verification. The system cannot independently prove that an uploaded leaf truly belongs to the selected crop.
-> - **In-Crop Out-of-Distribution Vulnerability**: If a user submits weeds, non-leaf objects, or an unsupported disease while selecting a supported crop (e.g., submitting cassava as `tomato`), the closed-set model will still force an activation among the tomato classes. If that activation exceeds `0.40`, a false positive can occur.
-> - **Provisional Baseline**: Thresholds and mismatch rules are operational screening safeguards for prototyping and must never replace on-field diagnostic verification by agricultural extension officers.
 
 #### Example Request (PowerShell)
 ```powershell
@@ -432,35 +399,102 @@ Invoke-RestMethod -Uri "http://127.0.0.1:5000/api/predict" -Method Post -Form $f
 }
 ```
 
-#### Example Error Response (Missing Crop - 400 Bad Request)
-```json
-{
-  "error": "missing_crop",
-  "message": "Field 'crop' is required. Supported crops are: 'tomato', 'maize', 'bell_pepper', 'citrus', 'potato'."
-}
+### Standard Error Responses
+All API error responses use a consistent JSON format: `{"error": "<error_code>", "message": "<descriptive_message>"}`.
+
+| Status Code | Error Code | Description / Example |
+| :---: | :--- | :--- |
+| **400** | `missing_crop` | `{"error": "missing_crop", "message": "Field 'crop' is required. Supported crops are: 'tomato', 'maize', 'bell_pepper', 'citrus', 'potato'."}` |
+| **400** | `unsupported_crop` | `{"error": "unsupported_crop", "message": "Unsupported crop 'cassava'. Supported crops are: 'tomato', 'maize', 'bell_pepper', 'citrus', 'potato'."}` |
+| **400** | `missing_image` | `{"error": "missing_image", "message": "No image file provided in multipart form data (field 'image')."}` |
+| **400** | `empty_image` | `{"error": "empty_image", "message": "The uploaded image file is empty or has no filename."}` |
+| **400** | `unsupported_format` | `{"error": "unsupported_format", "message": "Unsupported image format 'GIF'. CropScan AI accepts JPEG, PNG, and WebP images only."}` |
+| **400** | `invalid_language` | `{"error": "invalid_language", "message": "Supported languages are 'en' (English) and 'yo' (Yoruba)."}` |
+| **400** | `corrupt_image` | `{"error": "corrupt_image", "message": "Uploaded image file is truncated or corrupted."}` |
+| **400** | `spoofed_mime_type` | `{"error": "spoofed_mime_type", "message": "Image content does not match reported MIME type."}` |
+| **404** | `not_found` | `{"error": "not_found", "message": "The requested resource was not found."}` |
+| **405** | `method_not_allowed` | `{"error": "method_not_allowed", "message": "The HTTP method is not allowed for the requested URL."}` |
+| **413** | `payload_too_large` | `{"error": "payload_too_large", "message": "Uploaded image exceeds the maximum permitted size of 10 MB."}` |
+| **500** | `unexpected_inference_error` | `{"error": "unexpected_inference_error", "message": "An unexpected error occurred during prediction."}` |
+| **500** | `internal_server_error` | `{"error": "internal_server_error", "message": "An internal server error occurred."}` |
+| **503** | `model_not_loaded` | `{"error": "model_not_loaded", "message": "Vision model is not loaded or unavailable."}` |
+
+---
+
+## 10. Production Deployment Considerations
+
+### Development vs. Production WSGI Servers
+`python run.py` executes Flask's built-in development server. This server is intended strictly for local development and debugging; it is single-process, lacks request concurrency controls, and is not hardened against connection exhaustion attacks.
+
+In production environments, a dedicated WSGI server should be used to serve the application factory:
+
+#### Proposed Production Deployment on Linux / Containers (Gunicorn)
+```bash
+# Proposed deployment step (requires pip install gunicorn):
+export FLASK_ENV=production
+export SECRET_KEY="$(python3 -c 'import secrets; print(secrets.token_hex(32))')"
+export PORT=5000
+
+gunicorn "app:create_app('production')" \
+    --bind 0.0.0.0:${PORT:-5000} \
+    --workers 2 \
+    --threads 2 \
+    --timeout 120
 ```
 
-#### Example Error Response (Unsupported Crop - 400 Bad Request)
-```json
-{
-  "error": "unsupported_crop",
-  "message": "Unsupported crop 'cassava'. Supported crops are: 'tomato', 'maize', 'bell_pepper', 'citrus', 'potato'."
-}
+#### Proposed Production Deployment on Windows (Waitress)
+```powershell
+# Proposed deployment step (requires pip install waitress):
+$env:FLASK_ENV = "production"
+$env:SECRET_KEY = [System.Guid]::NewGuid().ToString("N")
+$env:PORT = "5000"
+
+waitress-serve --port=5000 "app:create_app('production')"
 ```
 
-#### Example Error Response (Unsupported Format - 400 Bad Request)
-```json
-{
-  "error": "unsupported_format",
-  "message": "Unsupported image format 'GIF'. CropScan AI accepts JPEG, PNG, and WebP images only."
-}
-```
+> [!NOTE]
+> **Dependency Status**: `gunicorn` and `waitress` are deployment-time servers and are not bundled in `requirements.txt` to keep the local prototype environment lightweight. The commands above are proposed deployment workflows.
 
-#### Example Error Response (Oversized File - 413 Payload Too Large)
-```json
-{
-  "error": "payload_too_large",
-  "message": "Uploaded image exceeds the maximum permitted size of 10 MB."
-}
-```
+### Production Security & Configuration Requirements
+1. **Mandatory Production `SECRET_KEY`**:
+   - In production mode (`FLASK_ENV=production` or `create_app('production')`), the application strictly validates that `SECRET_KEY` is provided, non-empty, and does not match the default development key (`dev-secret-key-cropscan`).
+   - If `SECRET_KEY` is missing or insecure, application startup raises `ValueError` immediately.
+   - Never commit `.env` files or hardcode production keys in the codebase. Supply `SECRET_KEY` via environment variables in your hosting provider's dashboard (Render, Railway, Fly.io, AWS Secrets Manager, etc.).
+2. **Port Binding**:
+   - `PORT` is validated by `validate_port()`. Invalid values safely fall back to `5000`.
+   - In containerized environments, ensure the server binds to `HOST=0.0.0.0` rather than `127.0.0.1` so traffic can reach the container.
+3. **Health Check Probes**:
+   - The `GET /health` endpoint can be configured as an HTTP liveness probe on cloud platforms and load balancers.
+4. **Verification Disclaimer**:
+   - External cloud deployment has not been executed or verified as part of this local repository.
 
+---
+
+## 11. Model & Safety Limitations
+
+1. **Closed-Set Vision Model Constraints**:
+   - MobileNetV2 uses a closed-set softmax classification head over 38 classes.
+   - Any image submitted to the model is forced to distribute probability across those 38 classes.
+   - If an unsupported crop (e.g., cassava, yam) or non-leaf image is uploaded with a supported crop selection, a false confident prediction can still occur.
+2. **Uncalibrated Confidence Scores**:
+   - Softmax probabilities reflect relative activation, not calibrated statistical probability of diagnosis correctness.
+3. **Crop Selection is Not Botanical Proof**:
+   - User-selected crop indicates farmer context; it does not scientifically prove botanical identity.
+4. **Informational Guidance Only**:
+   - All disease treatment recommendations are educational and conservative. Farmers must consult qualified agricultural extension officers before purchasing or applying commercial fungicides/pesticides.
+5. **Yoruba Translation Review Status**:
+   - All Yoruba guidance records are tagged with `"translation_review_status": "draft_translation_pending_native_expert_review"` and `"expert_review_required": true`.
+6. **Model Licensing**:
+   - The fine-tuned weights (`linkanjarad/mobilenet_v2_1.0_224-plant-disease-identification`) carry a license tag of **`other`** in Hugging Face metadata.
+   - Commercial rights have not been verified; formal author clearance or re-training from CC0 weights is required prior to commercial release.
+
+---
+
+## 12. Future Work (Planned)
+
+The following items are planned improvements and not yet implemented:
+- **Upstream Crop Verification / Anomaly Filter**: Lightweight binary classifier or open-set out-of-distribution detector to reject non-leaf images and unsupported species before disease inference.
+- **African Staple Model Integration**: Dedicated cassava and yam disease classification models (e.g. Google CropNet Cassava).
+- **Official Docker Packaging**: Multi-stage `Dockerfile` with Waitress/Gunicorn for single-command container deployment.
+- **Field Validation Trials**: Real-world validation on photographs taken under direct African field conditions (direct sun, varied soil, complex backgrounds).
+- **Native Speaker Validation**: Comprehensive review and refinement of Yoruba agricultural terminology with regional agronomists.
