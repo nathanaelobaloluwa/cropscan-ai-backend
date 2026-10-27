@@ -4,9 +4,11 @@ import pytest
 from app import create_app
 from app.config import (
     DEFAULT_CONFIDENCE_THRESHOLD,
+    DEFAULT_DEV_CORS_ORIGINS,
     DEFAULT_DEV_SECRET_KEY,
     DEFAULT_PORT,
     ProductionConfig,
+    parse_cors_origins,
     validate_confidence_threshold,
     validate_port,
     validate_production_secret,
@@ -281,3 +283,60 @@ class TestProductionConfigLoading:
         test_app = create_app("testing")
         assert test_app.config["SECRET_KEY"] == DEFAULT_DEV_SECRET_KEY
         assert test_app.config["TESTING"] is True
+
+
+class TestParseCorsOrigins:
+    """Unit tests for parse_cors_origins helper."""
+
+    def test_none_returns_empty_or_default(self):
+        assert parse_cors_origins(None) == []
+        assert parse_cors_origins(None, default=["http://localhost:3000"]) == ["http://localhost:3000"]
+
+    def test_empty_string_returns_empty(self):
+        assert parse_cors_origins("") == []
+        assert parse_cors_origins("   ") == []
+
+    def test_comma_separated_string_parsed_and_trimmed(self):
+        raw = "http://localhost:3000, https://cropscan.example.com ,  http://127.0.0.1:5173  "
+        expected = [
+            "http://localhost:3000",
+            "https://cropscan.example.com",
+            "http://127.0.0.1:5173",
+        ]
+        assert parse_cors_origins(raw) == expected
+
+    def test_list_and_set_inputs_cleaned(self):
+        raw = ["http://localhost:3000 ", "  ", "https://frontend.dev"]
+        expected = ["http://localhost:3000", "https://frontend.dev"]
+        assert parse_cors_origins(raw) == expected
+
+
+class TestCorsConfiguration:
+    """Integration tests verifying environment-specific CORS configurations."""
+
+    def test_development_defaults_to_local_origins(self, monkeypatch):
+        monkeypatch.delenv("CORS_ALLOWED_ORIGINS", raising=False)
+        app = create_app("development")
+        assert app.config["CORS_ALLOWED_ORIGINS"] == DEFAULT_DEV_CORS_ORIGINS
+
+    def test_development_respects_custom_origins(self, monkeypatch):
+        monkeypatch.setenv("CORS_ALLOWED_ORIGINS", "https://dev.custom.local,http://localhost:8080")
+        app = create_app("development")
+        assert app.config["CORS_ALLOWED_ORIGINS"] == [
+            "https://dev.custom.local",
+            "http://localhost:8080",
+        ]
+
+    def test_production_defaults_to_empty_origins(self, monkeypatch):
+        """In production without CORS_ALLOWED_ORIGINS, default is safely empty []."""
+        monkeypatch.setenv("SECRET_KEY", "prod-secure-token-1234567890abcdef")
+        monkeypatch.delenv("CORS_ALLOWED_ORIGINS", raising=False)
+        app = create_app("production")
+        assert app.config["CORS_ALLOWED_ORIGINS"] == []
+
+    def test_production_respects_explicit_frontend_origin(self, monkeypatch):
+        """In production with CORS_ALLOWED_ORIGINS, explicitly allows specified domain."""
+        monkeypatch.setenv("SECRET_KEY", "prod-secure-token-1234567890abcdef")
+        monkeypatch.setenv("CORS_ALLOWED_ORIGINS", "https://cropscan-frontend.vercel.app")
+        app = create_app("production")
+        assert app.config["CORS_ALLOWED_ORIGINS"] == ["https://cropscan-frontend.vercel.app"]

@@ -8,9 +8,12 @@ from werkzeug.exceptions import (
     RequestEntityTooLarge,
 )
 
+from flask_cors import CORS
+
 from app.config import (
     ProductionConfig,
     config_by_name,
+    parse_cors_origins,
     validate_production_secret,
 )
 from app.routes.health import health_bp
@@ -42,6 +45,11 @@ def create_app(config_name=None):
         config_class = config_by_name.get(config_name, config_by_name["default"])
     app.config.from_object(config_class)
 
+    # Dynamic runtime override for CORS_ALLOWED_ORIGINS from environment
+    env_cors = os.getenv("CORS_ALLOWED_ORIGINS")
+    if env_cors is not None:
+        app.config["CORS_ALLOWED_ORIGINS"] = parse_cors_origins(env_cors)
+
     # Validate production configuration safeguards
     is_production = (
         config_name == "production"
@@ -52,6 +60,19 @@ def create_app(config_name=None):
         secret_to_validate = env_secret if env_secret is not None else app.config.get("SECRET_KEY")
         validated_secret = validate_production_secret(secret_to_validate)
         app.config["SECRET_KEY"] = validated_secret
+
+    # Configure Cross-Origin Resource Sharing (CORS)
+    cors_origins = app.config.get("CORS_ALLOWED_ORIGINS", [])
+    CORS(
+        app,
+        resources={
+            r"/api/*": {"origins": cors_origins},
+            r"/health": {"origins": cors_origins},
+            r"/health/*": {"origins": cors_origins},
+        },
+        supports_credentials=False,
+        max_age=app.config.get("CORS_MAX_AGE", 86400),
+    )
 
     # Register blueprints
     app.register_blueprint(health_bp)

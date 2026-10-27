@@ -74,3 +74,93 @@ def test_unhandled_server_exception_returns_500_json(app, client):
     assert "PRIVATE_HTTP_ERROR_DETAIL_456" not in body["message"]
     assert "/internal/db" not in body["message"]
 
+
+def test_readiness_endpoint_when_model_not_loaded_returns_503(client):
+    """
+    Test that GET /health/ready returns HTTP 503 and not_ready status
+    when the vision model has not yet been loaded into memory.
+    """
+    from app.services.predictor import get_prediction_service, set_prediction_service
+    # Ensure predictor singleton has is_model_loaded=False
+    predictor = get_prediction_service()
+    original_model = predictor._model
+    predictor._model = None
+    try:
+        response = client.get("/health/ready")
+        assert response.status_code == 503
+        assert response.is_json
+        body = response.get_json()
+        assert body["status"] == "not_ready"
+        assert body["model_ready"] is False
+        assert "not yet loaded" in body["message"].lower()
+    finally:
+        predictor._model = original_model
+
+
+def test_readiness_endpoint_when_model_loaded_returns_200(client):
+    """
+    Test that GET /health/ready returns HTTP 200 and ready status
+    when the vision model is successfully loaded in memory.
+    """
+    from unittest.mock import MagicMock
+    from app.services.predictor import get_prediction_service
+    predictor = get_prediction_service()
+    original_model = predictor._model
+    original_proc = predictor._processor
+    predictor._model = MagicMock()
+    predictor._processor = MagicMock()
+    try:
+        response = client.get("/health/ready")
+        assert response.status_code == 200
+        assert response.is_json
+        body = response.get_json()
+        assert body["status"] == "ready"
+        assert body["model_ready"] is True
+        assert "ready for inference" in body["message"].lower()
+    finally:
+        predictor._model = original_model
+        predictor._processor = original_proc
+
+
+def test_cors_get_health_allowed_origin(client):
+    """Verify that an allowed origin receives Access-Control-Allow-Origin on GET /health."""
+    response = client.get("/health", headers={"Origin": "http://localhost:3000"})
+    assert response.status_code == 200
+    assert response.headers.get("Access-Control-Allow-Origin") == "http://localhost:3000"
+
+
+def test_cors_get_health_disallowed_origin(client):
+    """Verify that a disallowed origin does NOT receive Access-Control-Allow-Origin."""
+    response = client.get("/health", headers={"Origin": "https://malicious-attacker.com"})
+    assert response.status_code == 200
+    assert response.headers.get("Access-Control-Allow-Origin") is None
+
+
+def test_cors_preflight_options_allowed_origin(client):
+    """Verify that OPTIONS preflight request from allowed origin returns 200 with CORS headers."""
+    response = client.options(
+        "/api/predict",
+        headers={
+            "Origin": "http://localhost:3000",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "Content-Type",
+        },
+    )
+    assert response.status_code == 200
+    assert response.headers.get("Access-Control-Allow-Origin") == "http://localhost:3000"
+    methods = response.headers.get("Access-Control-Allow-Methods", "")
+    assert "POST" in methods
+
+
+def test_cors_preflight_options_disallowed_origin(client):
+    """Verify that OPTIONS preflight request from disallowed origin does NOT receive allow-origin."""
+    response = client.options(
+        "/api/predict",
+        headers={
+            "Origin": "https://malicious-attacker.com",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "Content-Type",
+        },
+    )
+    assert response.headers.get("Access-Control-Allow-Origin") is None
+

@@ -17,6 +17,34 @@ INSECURE_DEV_SECRET_KEYS: set[str] = {
     "dev-secret-key-cropscan-change-in-production",
 }
 
+DEFAULT_DEV_CORS_ORIGINS: list[str] = [
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:5173",
+]
+
+
+def parse_cors_origins(value: Any, default: Optional[list[str]] = None) -> list[str]:
+    """
+    Parses a string or iterable of allowed CORS origins into a list of cleaned URLs.
+
+    Rules:
+    - If value is None: returns a copy of default (or []).
+    - If value is a string: splits on commas, strips whitespace, and filters empty strings.
+    - If value is a list/tuple/set: strips whitespace and filters empty strings.
+    - Otherwise returns a copy of default (or []).
+    """
+    if value is None:
+        return list(default) if default is not None else []
+    if isinstance(value, str):
+        cleaned = [item.strip() for item in value.split(",") if item.strip()]
+        return cleaned
+    if isinstance(value, (list, tuple, set)):
+        cleaned = [str(item).strip() for item in value if str(item).strip()]
+        return cleaned
+    return list(default) if default is not None else []
+
 
 def validate_port(value: Any, default: int = DEFAULT_PORT) -> int:
     """
@@ -172,6 +200,13 @@ class Config:
     # Upload constraints
     MAX_CONTENT_LENGTH = 10 * 1024 * 1024  # 10 MB upload ceiling
 
+    # Cross-Origin Resource Sharing (CORS)
+    CORS_ALLOWED_ORIGINS: list[str] = parse_cors_origins(
+        os.getenv("CORS_ALLOWED_ORIGINS"),
+        default=[],
+    )
+    CORS_MAX_AGE: int = 86400  # 24 hours preflight cache
+
     # ML Model & Predictor Configuration
     CROPSCAN_MODEL_NAME = os.getenv(
         "CROPSCAN_MODEL_NAME",
@@ -187,18 +222,32 @@ class Config:
 class DevelopmentConfig(Config):
     """Configuration for local development."""
     DEBUG = True
+    CORS_ALLOWED_ORIGINS: list[str] = parse_cors_origins(
+        os.getenv("CORS_ALLOWED_ORIGINS"),
+        default=DEFAULT_DEV_CORS_ORIGINS,
+    )
 
 
 class TestingConfig(Config):
     """Configuration for automated unit and integration tests."""
     TESTING = True
     DEBUG = True
+    CORS_ALLOWED_ORIGINS: list[str] = [
+        "http://localhost:3000",
+        "https://trusted-frontend.test",
+    ]
 
 
 class ProductionConfig(Config):
     """Configuration for production deployment."""
     DEBUG = False
     SECRET_KEY = os.getenv("SECRET_KEY")
+    # In production, never allow any origin by default.
+    # Must be explicitly configured via CORS_ALLOWED_ORIGINS.
+    CORS_ALLOWED_ORIGINS: list[str] = parse_cors_origins(
+        os.getenv("CORS_ALLOWED_ORIGINS"),
+        default=[],
+    )
 
 
 config_by_name = {

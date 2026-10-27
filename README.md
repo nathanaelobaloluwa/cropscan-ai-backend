@@ -41,8 +41,9 @@ cropscan-ai-backend/
 │   └── test_screener.py         # Image quality screening unit, integration & boundary tests
 ├── .env.example                 # Documented template for local environment variables
 ├── .gitignore                   # Version control ignore rules (venv, .env, caches)
-├── requirements.txt             # Pinned core dependencies (Flask, Pillow, PyTorch, Transformers, pytest)
-├── run.py                       # Local development server entry point with validated port handling
+├── Procfile                     # Production WSGI process definition for Linux PaaS (Render/Railway/Heroku)
+├── requirements.txt             # Pinned core dependencies (Flask, Pillow, PyTorch, Transformers, Gunicorn, CORS)
+├── run.py                       # Application entry point with WSGI callable 'app' and validated port handling
 └── README.md                    # Project documentation
 ```
 
@@ -207,6 +208,7 @@ The application uses `python-dotenv` to load environment variables from `.env` i
 | `HOST` | string | `127.0.0.1` | Network interface to bind. Use `0.0.0.0` in Docker or PaaS environments. |
 | `PORT` | integer | `5000` | TCP port (`1` to `65535`). Validated at startup; invalid or out-of-range values log a warning and safely fall back to `5000`. |
 | `SECRET_KEY` | string | `dev-secret-key-cropscan` | Cryptographic secret. In `production`, this **must** be set to a custom, non-default secret key. If missing or default, startup aborts. |
+| `CORS_ALLOWED_ORIGINS` | string | `http://localhost:3000...` | Comma-separated list of allowed frontend origins. In development, defaults to local ports. In `production`, defaults to empty `[]` (safe default: cross-origin requests blocked until explicitly configured). |
 | `CROPSCAN_MODEL_NAME` | string | `linkanjarad/mobilenet_v2_1.0_224-plant-disease-identification` | Hugging Face model repository or local directory path. |
 | `PREDICTOR_DEVICE` | string | `cpu` | PyTorch inference device (`cpu` or `cuda`). |
 | `PREDICTION_CONFIDENCE_THRESHOLD` | float | `0.40` | Screening confidence threshold in `[0.0, 1.0]`. Validated at startup; invalid values fall back to `0.40` with a warning. |
@@ -215,11 +217,11 @@ The application uses `python-dotenv` to load environment variables from `.env` i
 
 ## 9. API Reference
 
-### 1. Health Check
-Checks the status and process liveness of the CropScan AI backend service.
+### 1. Health & Liveness Probe
+Checks the process status and responsiveness of the CropScan AI backend service. Truthfully reports whether the AI vision model is already loaded in memory without forcing synchronous model loading.
 
 > [!NOTE]
-> **What `/health` Verifies**: This endpoint verifies that the Flask application process is active and responding to HTTP requests. It **does NOT** execute model inference, benchmark GPU availability, or connect to external databases.
+> **What `/health` Verifies**: This endpoint acts as an **HTTP Liveness Probe**. It verifies that the Flask application process is responsive. It does not force model loading or benchmark GPU availability.
 
 - **URL**: `/health`
 - **Method**: `GET`
@@ -236,13 +238,36 @@ Invoke-RestMethod -Uri "http://127.0.0.1:5000/health" -Method Get
 {
   "status": "healthy",
   "message": "CropScan AI Backend service is running",
-  "version": "0.1.0"
+  "version": "0.1.0",
+  "model_ready": false
 }
 ```
 
 ---
 
-### 2. Leaf Image Upload & Prediction
+### 2. Model Readiness Probe
+Checks whether the MobileNetV2 plant disease vision model is loaded into memory and ready to serve inference requests immediately without cold-start latency.
+
+- **URL**: `/health/ready`
+- **Method**: `GET`
+- **Response Format**: `application/json`
+- **Status Codes**:
+  - `200 OK`: Model is loaded in memory and ready for inference (`status: "ready"`).
+  - `503 Service Unavailable`: Model is not yet loaded into memory (`status: "not_ready"`).
+
+#### Example Response Body (Model Loaded)
+```json
+{
+  "status": "ready",
+  "model_ready": true,
+  "model_name": "linkanjarad/mobilenet_v2_1.0_224-plant-disease-identification",
+  "message": "Vision model is loaded into memory and ready for inference."
+}
+```
+
+---
+
+### 3. Leaf Image Upload & Prediction
 Receives a crop leaf photograph and target crop selection via multipart form-data, performs raster validation, executes MobileNetV2 vision inference, protects against crop mismatches, and returns localized agronomic guidance in English or Yoruba.
 
 - **URL**: `/api/predict`
@@ -493,34 +518,39 @@ All API error responses use a consistent JSON format: `{"error": "<error_code>",
 ### Development vs. Production WSGI Servers
 `python run.py` executes Flask's built-in development server. This server is intended strictly for local development and debugging; it is single-process, lacks request concurrency controls, and is not hardened against connection exhaustion attacks.
 
-In production environments, a dedicated WSGI server should be used to serve the application factory:
+In production environments, a dedicated WSGI server must be used to serve the application:
 
-#### Proposed Production Deployment on Linux / Containers (Gunicorn)
+#### Production Deployment on Linux / Containers (Gunicorn)
+`gunicorn` is included in `requirements.txt`. The repository includes a `Procfile` targeting the verified WSGI callable `run:app`:
+
 ```bash
-# Proposed deployment step (requires pip install gunicorn):
+# Production startup command (Render, Railway, Fly.io, Docker):
 export FLASK_ENV=production
 export SECRET_KEY="$(python3 -c 'import secrets; print(secrets.token_hex(32))')"
-export PORT=5000
+export CORS_ALLOWED_ORIGINS="https://your-frontend.vercel.app"
 
-gunicorn "app:create_app('production')" \
+gunicorn "run:app" \
     --bind 0.0.0.0:${PORT:-5000} \
-    --workers 2 \
-    --threads 2 \
+    --workers 1 \
+    --threads 4 \
     --timeout 120
 ```
 
-#### Proposed Production Deployment on Windows (Waitress)
+> [!IMPORTANT]
+> **Worker Process Memory Sizing (`--workers 1 --threads 4`)**:
+> PyTorch with MobileNetV2 consumes approximately 250–350 MB of RAM per process. Standard multi-worker configurations (e.g. `--workers 4`) spawn 4 independent OS processes, requiring $> 1.2\text{ GB}$ RAM. On free-tier cloud instances (often capped at 512 MB RAM), multiple workers will trigger an Out-Of-Memory (OOM) kill.
+> Using **1 worker process with 4 threads** keeps a single copy of PyTorch and model weights in memory while concurrently serving HTTP requests.
+
+#### Production Deployment on Windows (Waitress)
+For native Windows deployment:
 ```powershell
-# Proposed deployment step (requires pip install waitress):
+pip install waitress
 $env:FLASK_ENV = "production"
 $env:SECRET_KEY = [System.Guid]::NewGuid().ToString("N")
-$env:PORT = "5000"
+$env:CORS_ALLOWED_ORIGINS = "https://your-frontend.vercel.app"
 
-waitress-serve --port=5000 "app:create_app('production')"
+waitress-serve --port=5000 "run:app"
 ```
-
-> [!NOTE]
-> **Dependency Status**: `gunicorn` and `waitress` are deployment-time servers and are not bundled in `requirements.txt` to keep the local prototype environment lightweight. The commands above are proposed deployment workflows.
 
 ### Production Security & Configuration Requirements
 1. **Mandatory Production `SECRET_KEY`**:
