@@ -1,7 +1,10 @@
 import os
-from flask import Flask
+from flask import Flask, jsonify
+from werkzeug.exceptions import RequestEntityTooLarge
+
 from app.config import config_by_name
 from app.routes.health import health_bp
+from app.routes.predict import predict_bp
 
 
 def create_app(config_name=None):
@@ -27,5 +30,14 @@ def create_app(config_name=None):
 
     # Register blueprints
     app.register_blueprint(health_bp)
+    app.register_blueprint(predict_bp)
+
+    # Global error handlers
+    @app.errorhandler(RequestEntityTooLarge)
+    def handle_request_entity_too_large(e):
+        return jsonify({
+            "error": "payload_too_large",
+            "message": "Uploaded file exceeds the maximum permitted size of 10 MB.",
+        }), 413
 
     return app

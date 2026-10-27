@@ -2,5 +2,8 @@
 Flask>=3.0.0,<4.0.0
 python-dotenv>=1.0.0
 
+# Image Processing & Validation
+Pillow>=10.0.0
+
 # Testing
 pytest>=8.0.0

@@ -12,13 +12,15 @@ The codebase is organized using Flask's **Application Factory Pattern** and **Bl
 cropscan-ai-backend/
 ├── app/
 │   ├── __init__.py              # Application factory (create_app)
-│   ├── config.py                # Environment configurations (dev, test, prod)
+│   ├── config.py                # Environment configurations (dev, test, prod; 10 MB limit)
 │   ├── routes/
 │   │   ├── __init__.py          # Blueprint aggregation
-│   │   └── health.py            # Health check endpoint (GET /health)
+│   │   ├── health.py            # Health check endpoint (GET /health)
+│   │   └── predict.py           # Image upload & prediction endpoint (POST /api/predict)
 │   ├── services/
 │   │   ├── __init__.py          # Service layer exports
-│   │   └── guidance.py          # GuidanceService (English & Yoruba resolution)
+│   │   ├── guidance.py          # GuidanceService (English & Yoruba resolution)
+│   │   └── image_validator.py   # In-memory image decoding, format & security validation
 │   └── data/
 │       ├── __init__.py          # Static dataset package
 │       ├── class_indices.json   # Verified 38-class model index mapping
@@ -29,10 +31,11 @@ cropscan-ai-backend/
 │   ├── __init__.py
 │   ├── conftest.py              # Pytest fixtures (app, client)
 │   ├── test_health.py           # Health check & startup unit tests
-│   └── test_guidance.py         # Knowledge base & GuidanceService unit tests
+│   ├── test_guidance.py         # Knowledge base & GuidanceService unit tests
+│   └── test_predict.py          # Image upload validation & endpoint tests
 ├── .env.example                 # Template for local environment variables
 ├── .gitignore                   # Ignored files (venv, env, caches)
-├── requirements.txt             # Core dependencies
+├── requirements.txt             # Core dependencies (Flask, Pillow, pytest)
 ├── run.py                       # Server entry point
 └── README.md                    # Project documentation
 ```
@@ -143,7 +146,7 @@ Run the test suite using `pytest`:
 pytest -v
 ```
 
-All 14 tests run in `< 0.3s` against isolated test fixtures without requiring live network connections or heavy model weights.
+All 28 tests execute in `~2s` against isolated test fixtures with programmatically generated in-memory images, requiring no live network connection or heavy model weights.
 
 ---
 
@@ -169,5 +172,65 @@ Invoke-RestMethod -Uri "http://127.0.0.1:5000/health" -Method Get
   "status": "healthy",
   "message": "CropScan AI Backend service is running",
   "version": "0.1.0"
+}
+```
+
+---
+
+### 2. Leaf Image Upload & Prediction
+
+Receives a crop leaf photograph, performs validation, and returns assessment status.
+
+- **URL**: `/api/predict`
+- **Method**: `POST`
+- **Content-Type**: `multipart/form-data`
+- **Parameters**:
+  - `image` *(required, file)*: Image file (JPEG, PNG, or WebP). Maximum file size is **10 MB**.
+  - `lang` *(optional, string)*: Language for response guidance (`en` for English, `yo` for Yoruba). Defaults to `en`.
+
+#### Validation & Security Safeguards
+- **In-Memory Decoding**: Uploaded files are decoded strictly in memory using Pillow; files are never written to disk.
+- **Format Verification**: The true raster header and byte streams are verified (protecting against spoofed `.jpg` extensions containing text or scripts).
+- **Decompression Bomb Protection**: Guard rails enforce maximum dimensions (10,000 px) to prevent memory-exhaustion attacks.
+- **Transparent Model Status**: Because model weights are not integrated in Phase 2, valid uploads return `status: "model_not_configured"` with validated image metadata. No fabricated predictions or fake confidence scores are returned.
+
+#### Example Request (PowerShell)
+```powershell
+$form = @{
+    image = Get-Item "C:\path\to\leaf_sample.jpg"
+    lang  = "en"
+}
+Invoke-RestMethod -Uri "http://127.0.0.1:5000/api/predict" -Method Post -Form $form
+```
+
+#### Example Response (Valid Upload - Model Pending Integration)
+```json
+{
+  "status": "model_not_configured",
+  "message": "Image validated successfully. Plant disease detection model is not configured yet.",
+  "language": "en",
+  "image_metadata": {
+    "format": "JPEG",
+    "width": 800,
+    "height": 600,
+    "color_mode": "RGB",
+    "size_bytes": 104520
+  }
+}
+```
+
+#### Example Error Response (Unsupported Format - 400 Bad Request)
+```json
+{
+  "error": "unsupported_format",
+  "message": "Unsupported image format 'GIF'. CropScan AI accepts JPEG, PNG, and WebP images only."
+}
+```
+
+#### Example Error Response (Oversized File - 413 Payload Too Large)
+```json
+{
+  "error": "payload_too_large",
+  "message": "Uploaded image exceeds the maximum permitted size of 10 MB."
 }
 ```

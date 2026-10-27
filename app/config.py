@@ -12,6 +12,9 @@ class Config:
     DEBUG = False
     JSON_SORT_KEYS = False
 
+    # Upload constraints
+    MAX_CONTENT_LENGTH = 10 * 1024 * 1024  # 10 MB upload ceiling
+
 
 class DevelopmentConfig(Config):
     """Configuration for local development."""
