@@ -15,6 +15,15 @@ class Config:
     # Upload constraints
     MAX_CONTENT_LENGTH = 10 * 1024 * 1024  # 10 MB upload ceiling
 
+    # ML Model & Predictor Configuration
+    CROPSCAN_MODEL_NAME = os.getenv(
+        "CROPSCAN_MODEL_NAME",
+        "linkanjarad/mobilenet_v2_1.0_224-plant-disease-identification"
+    )
+    # Provisional confidence threshold (0.40) - documented as provisional for prototype
+    PREDICTION_CONFIDENCE_THRESHOLD = float(os.getenv("PREDICTION_CONFIDENCE_THRESHOLD", "0.40"))
+    PREDICTOR_DEVICE = os.getenv("PREDICTOR_DEVICE", "cpu")
+
 
 class DevelopmentConfig(Config):
     """Configuration for local development."""

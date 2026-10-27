@@ -12,7 +12,7 @@ The codebase is organized using Flask's **Application Factory Pattern** and **Bl
 cropscan-ai-backend/
 ├── app/
 │   ├── __init__.py              # Application factory (create_app)
-│   ├── config.py                # Environment configurations (dev, test, prod; 10 MB limit)
+│   ├── config.py                # Environment configurations (10 MB limit, model & threshold settings)
 │   ├── routes/
 │   │   ├── __init__.py          # Blueprint aggregation
 │   │   ├── health.py            # Health check endpoint (GET /health)
@@ -20,7 +20,8 @@ cropscan-ai-backend/
 │   ├── services/
 │   │   ├── __init__.py          # Service layer exports
 │   │   ├── guidance.py          # GuidanceService (English & Yoruba resolution)
-│   │   └── image_validator.py   # In-memory image decoding, format & security validation
+│   │   ├── image_validator.py   # In-memory image decoding, format & security validation
+│   │   └── predictor.py         # PredictionService (MobileNetV2 inference, threshold & guidance)
 │   └── data/
 │       ├── __init__.py          # Static dataset package
 │       ├── class_indices.json   # Verified 38-class model index mapping
@@ -32,10 +33,11 @@ cropscan-ai-backend/
 │   ├── conftest.py              # Pytest fixtures (app, client)
 │   ├── test_health.py           # Health check & startup unit tests
 │   ├── test_guidance.py         # Knowledge base & GuidanceService unit tests
-│   └── test_predict.py          # Image upload validation & endpoint tests
+│   ├── test_predict.py          # Endpoint integration & upload security tests
+│   └── test_predictor.py        # ML service unit & genuine inference tests
 ├── .env.example                 # Template for local environment variables
 ├── .gitignore                   # Ignored files (venv, env, caches)
-├── requirements.txt             # Core dependencies (Flask, Pillow, pytest)
+├── requirements.txt             # Core dependencies (Flask, Pillow, PyTorch, Transformers, pytest)
 ├── run.py                       # Server entry point
 └── README.md                    # Project documentation
 ```
@@ -45,6 +47,35 @@ cropscan-ai-backend/
 - **Disease IDs**: Standardized machine slugs (e.g., `"tomato_early_blight"`).
 - **Display Names**: Farmer-friendly localized titles (e.g., `"Early Blight"` or `"Àrùn Èérún Tòmátò"`).
 - **Guidance Records**: Conservative cultural and preventive measures referencing verified agricultural bodies (FAO, IITA, CIMMYT, CIP, WorldVeg).
+
+---
+
+## Machine Learning Vision Model & Inference
+
+### Model Specifications
+- **Model Name**: `linkanjarad/mobilenet_v2_1.0_224-plant-disease-identification`
+- **Model Architecture**: MobileNetV2 for Image Classification (`MobileNetV2ForImageClassification`)
+- **Base Model**: `google/mobilenet_v2_1.0_224` (Apache 2.0 license)
+- **Training Dataset**: Kaggle New Plant Diseases Dataset (PlantVillage, CC0 Public Domain)
+- **Model Size**: ~14.2 MB (`model.safetensors`, 314 weight tensors)
+- **Default Device**: CPU inference (`PREDICTOR_DEVICE=cpu`)
+- **Singleton Lifecycle**: Model weights and preprocessor are loaded once into memory upon service initialization or first request, preventing per-request reloading overhead.
+
+### Documented & Verified Preprocessing Pipeline
+CropScan AI reproduces the exact preprocessing pipeline from the model configuration without duplicate normalization:
+1. **Shortest-edge resize**: 256 pixels
+2. **Resampling method**: Bilinear interpolation (`PIL.Image.BILINEAR`)
+3. **Center crop**: 224 × 224 pixels
+4. **Pixel rescaling**: Multiplied by `1 / 255.0` (`0.00392156862745098`)
+5. **Channel normalization**: Mean `[0.5, 0.5, 0.5]` and standard deviation `[0.5, 0.5, 0.5]` per RGB channel
+6. **Backend Implementation**: Powered by `MobileNetV2ImageProcessorPil` (Pillow-native backend, avoiding the heavy `torchvision` dependency).
+
+### Confidence Thresholding & Uncertainty Limitations
+- **Provisional Threshold**: Defaulting to `0.40` (configurable via `PREDICTION_CONFIDENCE_THRESHOLD`).
+- **Provisional Nature**: This threshold is strictly provisional for screening in this hackathon prototype and has not been validated through agricultural field trials.
+- **Uncalibrated Scores**: Raw model scores are computed via Softmax over 38 logits. They represent relative model activation among trained classes, **not calibrated probabilities** that the diagnosis is correct.
+- **Not a Confirmed Diagnosis**: CropScan AI provides automated screening aids, not a botanical or phytopathological diagnosis. Farmers must consult local agricultural extension officers before applying chemical treatments.
+- **Out-of-Distribution Vulnerability**: Confidence thresholding alone **cannot reliably detect** unsupported crops (e.g., cassava, yam), non-leaf images, or arbitrary out-of-distribution inputs. An image of a shoe or weeds may still yield an arbitrary prediction if forced through closed-set softmax classification.
 
 ---
 
@@ -65,8 +96,8 @@ The initial knowledge base focuses on high-priority Nigerian staple crops suppor
 ## Model Licensing Uncertainty & Known Limitations
 
 1. **Licensing Status**:
-   - The fine-tuned weights (`linkanjarad/mobilenet_v2_1.0_224-plant-disease-identification`) carry a license metadata tag of **`other`**.
-   - While the base architecture (`google/mobilenet_v2_1.0_224`) is Apache 2.0 and the PlantVillage dataset was released under Public Domain (CC0 1.0), the fine-tuned weights lack a standard open-source commercial grant.
+   - The fine-tuned weights (`linkanjarad/mobilenet_v2_1.0_224-plant-disease-identification`) carry a license metadata tag of **`other`** in the Hugging Face repository.
+   - While the base architecture (`google/mobilenet_v2_1.0_224`) is Apache 2.0 and the PlantVillage dataset was released under Public Domain (CC0 1.0), the fine-tuned repository lacks an explicit license file defining commercial redistribution rights.
    - **Prototype constraint**: The model weights are suitable for hackathon demonstration and academic evaluation, but commercial production requires formal author clarification or custom training from CC0 weights.
 
 2. **Evaluation Accuracy vs. Real-World Field Performance**:
@@ -110,7 +141,7 @@ On Windows PowerShell:
 
 ### 3. Install Dependencies
 
-Install the core dependencies:
+Install the pinned dependencies:
 ```powershell
 pip install -r requirements.txt
 ```
@@ -141,12 +172,16 @@ The server will start locally:
 
 ## Running the Automated Tests
 
-Run the test suite using `pytest`:
+Run the complete test suite using `pytest`:
 ```powershell
 pytest -v
 ```
 
-All 28 tests execute in `~2s` against isolated test fixtures with programmatically generated in-memory images, requiring no live network connection or heavy model weights.
+All **42 automated tests** execute in `~3s`:
+- `tests/test_health.py`: Health endpoint and startup checks.
+- `tests/test_guidance.py`: Knowledge base retrieval, 38-class coverage, Yoruba/English consistency, and safe fallbacks.
+- `tests/test_predictor.py`: Preprocessing verification, real MobileNetV2 model loading, genuine inference on sample images, confidence threshold boundary behavior, and exception handling.
+- `tests/test_predict.py`: End-to-end endpoint tests for `POST /api/predict`, format verification, payload limit (10 MB), language localization, and error statuses (400, 413, 500, 503).
 
 ---
 
@@ -179,7 +214,7 @@ Invoke-RestMethod -Uri "http://127.0.0.1:5000/health" -Method Get
 
 ### 2. Leaf Image Upload & Prediction
 
-Receives a crop leaf photograph, performs validation, and returns assessment status.
+Receives a crop leaf photograph, performs security and format validation, runs genuine inference on MobileNetV2, and returns localized agronomic guidance in English or Yoruba.
 
 - **URL**: `/api/predict`
 - **Method**: `POST`
@@ -192,7 +227,8 @@ Receives a crop leaf photograph, performs validation, and returns assessment sta
 - **In-Memory Decoding**: Uploaded files are decoded strictly in memory using Pillow; files are never written to disk.
 - **Format Verification**: The true raster header and byte streams are verified (protecting against spoofed `.jpg` extensions containing text or scripts).
 - **Decompression Bomb Protection**: Guard rails enforce maximum dimensions (10,000 px) to prevent memory-exhaustion attacks.
-- **Transparent Model Status**: Because model weights are not integrated in Phase 2, valid uploads return `status: "model_not_configured"` with validated image metadata. No fabricated predictions or fake confidence scores are returned.
+- **Genuine Model Inference**: Uses the pretrained MobileNetV2 model weights. Never fabricates predictions or confidence scores.
+- **Safe Fallback**: Predictions below the provisional confidence threshold (0.40) return `inconclusive_low_confidence` and safe fallback instructions without diagnosing.
 
 #### Example Request (PowerShell)
 ```powershell
@@ -203,11 +239,10 @@ $form = @{
 Invoke-RestMethod -Uri "http://127.0.0.1:5000/api/predict" -Method Post -Form $form
 ```
 
-#### Example Response (Valid Upload - Model Pending Integration)
+#### Example Response (Genuine Prediction - Confident with Guidance)
 ```json
 {
-  "status": "model_not_configured",
-  "message": "Image validated successfully. Plant disease detection model is not configured yet.",
+  "status": "success",
   "language": "en",
   "image_metadata": {
     "format": "JPEG",
@@ -215,6 +250,84 @@ Invoke-RestMethod -Uri "http://127.0.0.1:5000/api/predict" -Method Post -Form $f
     "height": 600,
     "color_mode": "RGB",
     "size_bytes": 104520
+  },
+  "prediction": {
+    "assessment_status": "confident",
+    "model_name": "linkanjarad/mobilenet_v2_1.0_224-plant-disease-identification",
+    "class_index": 29,
+    "class_label": "Tomato with Early Blight",
+    "confidence": 0.8845,
+    "confidence_threshold": 0.40,
+    "is_provisional_threshold": true,
+    "disclaimer": "Automated screening result only; not a confirmed agricultural diagnosis. Raw model scores are uncalibrated and do not guarantee accuracy. Always consult local agricultural extension officers before applying treatments.",
+    "guidance": {
+      "status": "success",
+      "class_index": 29,
+      "model_class_id": "Tomato with Early Blight",
+      "language": "en",
+      "is_healthy": false,
+      "message": "Guidance record retrieved successfully.",
+      "data": {
+        "disease_id": "tomato_early_blight",
+        "crop": "Tomato",
+        "display_name": "Early Blight",
+        "scientific_name": "Alternaria solani",
+        "severity": "moderate",
+        "symptoms": [
+          "Dark brown to black spots with concentric rings (target-like pattern) on older leaves.",
+          "Yellow halo surrounding leaf lesions.",
+          "Premature defoliation starting from the lower canopy upwards."
+        ],
+        "treatment": [
+          "Prune and destroy infected lower leaves immediately to prevent fungal spore dispersal.",
+          "Apply approved copper-based or bio-fungicide sprays during high humidity according to manufacturer instructions."
+        ],
+        "prevention": [
+          "Practice 3-year crop rotation avoiding Solanaceous crops (potato, pepper, eggplant).",
+          "Water at the base of plants via drip or furrow; avoid overhead watering that wets foliage.",
+          "Apply clean straw or plastic mulch to prevent soil-borne fungal spores from splashing onto lower leaves."
+        ],
+        "expert_review_required": true,
+        "sources": [
+          "IITA Plant Health Guide: Tomato Pest & Disease Management in West Africa",
+          "FAO Integrated Pest Management: Solanaceous Crops"
+        ]
+      }
+    }
+  }
+}
+```
+
+#### Example Response (Inconclusive Low Confidence)
+```json
+{
+  "status": "success",
+  "language": "en",
+  "image_metadata": {
+    "format": "JPEG",
+    "width": 256,
+    "height": 256,
+    "color_mode": "RGB",
+    "size_bytes": 12450
+  },
+  "prediction": {
+    "assessment_status": "inconclusive_low_confidence",
+    "model_name": "linkanjarad/mobilenet_v2_1.0_224-plant-disease-identification",
+    "class_index": 30,
+    "class_label": "Tomato with Late Blight",
+    "confidence": 0.2168,
+    "confidence_threshold": 0.40,
+    "is_provisional_threshold": true,
+    "disclaimer": "Model confidence (21.68%) is below the provisional operational threshold (40.00%). Raw model scores are not calibrated probabilities of correctness. Confidence thresholding cannot reliably detect unsupported crops, non-leaf images, or out-of-distribution inputs. This result is inconclusive and must not be treated as a confirmed diagnosis.",
+    "guidance": {
+      "status": "unreliable_assessment",
+      "class_index": null,
+      "model_class_id": null,
+      "language": "en",
+      "is_healthy": null,
+      "message": "The image could not be reliably assessed. Please capture a clear, well-lit photo of a single leaf against a plain background, or consult your local agricultural extension service for on-field diagnosis.",
+      "data": null
+    }
   }
 }
 ```
@@ -234,3 +347,4 @@ Invoke-RestMethod -Uri "http://127.0.0.1:5000/api/predict" -Method Post -Form $f
   "message": "Uploaded image exceeds the maximum permitted size of 10 MB."
 }
 ```
+

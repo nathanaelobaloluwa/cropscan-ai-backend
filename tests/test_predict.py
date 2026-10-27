@@ -1,6 +1,9 @@
 import io
+from unittest.mock import MagicMock, patch
 import pytest
 from PIL import Image
+
+from app.services.predictor import InferenceExecutionError, ModelLoadError
 
 
 def create_in_memory_image(
@@ -20,11 +23,11 @@ def create_in_memory_image(
 
 
 class TestPredictEndpoint:
-    """Automated tests for POST /api/predict image upload & validation."""
+    """Automated tests for POST /api/predict image upload, validation & inference."""
 
-    # 1. Valid Formats & Model-Not-Configured Response
-    def test_valid_jpeg_upload_returns_model_not_configured(self, client):
-        """Verify valid JPEG upload returns 200 with model_not_configured and metadata."""
+    # 1. Valid Formats & Genuine Model Prediction
+    def test_valid_jpeg_upload_returns_genuine_prediction(self, client):
+        """Verify valid JPEG upload returns 200 with genuine prediction and metadata."""
         img_buf = create_in_memory_image("JPEG", size=(200, 150))
         data = {
             "image": (img_buf, "leaf_sample.jpg", "image/jpeg"),
@@ -41,9 +44,8 @@ class TestPredictEndpoint:
         assert response.is_json
 
         body = response.get_json()
-        assert body["status"] == "model_not_configured"
+        assert body["status"] == "success"
         assert body["language"] == "en"
-        assert "not configured yet" in body["message"]
 
         metadata = body["image_metadata"]
         assert metadata["format"] == "JPEG"
@@ -52,13 +54,21 @@ class TestPredictEndpoint:
         assert metadata["color_mode"] == "RGB"
         assert metadata["size_bytes"] > 0
 
-        # Verify no fabricated predictions exist
-        assert "prediction" not in body
-        assert "class_index" not in body
-        assert "confidence" not in body
+        # Verify real prediction structure
+        assert "prediction" in body
+        pred = body["prediction"]
+        assert isinstance(pred["class_index"], int)
+        assert 0 <= pred["class_index"] <= 37
+        assert isinstance(pred["class_label"], str)
+        assert isinstance(pred["confidence"], float)
+        assert 0.0 <= pred["confidence"] <= 1.0
+        assert pred["confidence_threshold"] == 0.40
+        assert pred["is_provisional_threshold"] is True
+        assert pred["assessment_status"] in ("confident", "inconclusive_low_confidence", "recognized_unsupported_crop")
+        assert pred["guidance"] is not None
 
     def test_valid_png_upload(self, client):
-        """Verify valid PNG upload returns 200 and correct PNG metadata."""
+        """Verify valid PNG upload returns 200, correct PNG metadata, and prediction."""
         img_buf = create_in_memory_image("PNG", size=(100, 100))
         data = {
             "image": (img_buf, "leaf.png", "image/png"),
@@ -73,11 +83,12 @@ class TestPredictEndpoint:
 
         assert response.status_code == 200
         body = response.get_json()
-        assert body["status"] == "model_not_configured"
+        assert body["status"] == "success"
         assert body["image_metadata"]["format"] == "PNG"
+        assert "prediction" in body
 
     def test_valid_webp_upload(self, client):
-        """Verify valid WebP upload returns 200 and correct WebP metadata."""
+        """Verify valid WebP upload returns 200, correct WebP metadata, and prediction."""
         img_buf = create_in_memory_image("WEBP", size=(80, 80))
         data = {
             "image": (img_buf, "leaf.webp", "image/webp"),
@@ -92,11 +103,12 @@ class TestPredictEndpoint:
 
         assert response.status_code == 200
         body = response.get_json()
-        assert body["status"] == "model_not_configured"
+        assert body["status"] == "success"
         assert body["image_metadata"]["format"] == "WEBP"
+        assert "prediction" in body
 
     def test_yoruba_language_support(self, client):
-        """Verify valid upload with lang='yo' returns Yoruba status message."""
+        """Verify valid upload with lang='yo' returns Yoruba guidance."""
         img_buf = create_in_memory_image("JPEG", size=(64, 64))
         data = {
             "image": (img_buf, "leaf.jpg", "image/jpeg"),
@@ -111,9 +123,9 @@ class TestPredictEndpoint:
 
         assert response.status_code == 200
         body = response.get_json()
-        assert body["status"] == "model_not_configured"
+        assert body["status"] == "success"
         assert body["language"] == "yo"
-        assert "Àwòrán náà" in body["message"]
+        assert body["prediction"]["guidance"]["language"] == "yo"
 
     def test_default_language_defaults_to_english(self, client):
         """Verify that omitting the lang parameter defaults to 'en'."""
@@ -131,6 +143,49 @@ class TestPredictEndpoint:
         assert response.status_code == 200
         body = response.get_json()
         assert body["language"] == "en"
+        assert body["prediction"]["guidance"]["language"] == "en"
+
+    def test_model_loading_failure_returns_503(self, client):
+        """Verify that a model loading failure returns HTTP 503 service unavailable."""
+        img_buf = create_in_memory_image("JPEG", size=(64, 64))
+        data = {"image": (img_buf, "leaf.jpg", "image/jpeg")}
+
+        with patch("app.routes.predict.get_prediction_service") as mock_get_svc:
+            mock_svc = MagicMock()
+            mock_svc.predict.side_effect = ModelLoadError("Model weights corrupted")
+            mock_get_svc.return_value = mock_svc
+
+            response = client.post(
+                "/api/predict",
+                data=data,
+                content_type="multipart/form-data"
+            )
+
+            assert response.status_code == 503
+            body = response.get_json()
+            assert body["error"] == "model_load_error"
+            assert "corrupted" in body["message"]
+
+    def test_inference_execution_failure_returns_500(self, client):
+        """Verify that an inference forward pass failure returns HTTP 500 error."""
+        img_buf = create_in_memory_image("JPEG", size=(64, 64))
+        data = {"image": (img_buf, "leaf.jpg", "image/jpeg")}
+
+        with patch("app.routes.predict.get_prediction_service") as mock_get_svc:
+            mock_svc = MagicMock()
+            mock_svc.predict.side_effect = InferenceExecutionError("Forward pass failed")
+            mock_get_svc.return_value = mock_svc
+
+            response = client.post(
+                "/api/predict",
+                data=data,
+                content_type="multipart/form-data"
+            )
+
+            assert response.status_code == 500
+            body = response.get_json()
+            assert body["error"] == "inference_failed"
+
 
     # 2. Rejection of Missing or Empty Files
     def test_missing_image_field_returns_400(self, client):

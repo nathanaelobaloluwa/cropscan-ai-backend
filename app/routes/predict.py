@@ -1,7 +1,13 @@
 from flask import Blueprint, jsonify, request
 from werkzeug.exceptions import RequestEntityTooLarge
 
-from app.services.image_validator import ImageValidationError, validate_image_upload
+from app.services.image_validator import ImageValidationError, validate_and_load_image
+from app.services.predictor import (
+    InferenceExecutionError,
+    ModelLoadError,
+    PredictionError,
+    get_prediction_service,
+)
 
 predict_bp = Blueprint("predict", __name__, url_prefix="/api")
 
@@ -13,16 +19,17 @@ def predict():
     """
     POST /api/predict
 
-    Receives a leaf image upload via multipart form-data, performs comprehensive
-    security and format validation, and returns the upload status.
+    Receives a leaf image upload via multipart form-data, performs security
+    and raster validation, runs genuine inference on MobileNetV2, and returns
+    verified predictions along with localized agronomic guidance in English or Yoruba.
 
     Form Parameters:
         image: File (JPEG, PNG, or WebP up to 10 MB).
         lang: Optional string ('en' or 'yo', defaults to 'en').
 
-    Response (Phase 2):
-        Returns status 'model_not_configured' with verified image metadata.
-        No fabricated predictions or fake confidence scores are returned.
+    Response (Phase 3):
+        Returns HTTP 200 with genuine prediction, model confidence, assessment
+        status, and localized guidance.
     """
     # 1. Validate Language Parameter
     raw_lang = request.form.get("lang") or request.args.get("lang") or "en"
@@ -49,29 +56,41 @@ def predict():
             "message": "The uploaded image file is empty or has no filename.",
         }), 400
 
-    # 3. Validate Image Content Safely in Memory
+    # 3. Validate and Safely Load Image in Memory
     try:
-        metadata = validate_image_upload(file)
+        metadata, rgb_image = validate_and_load_image(file)
     except ImageValidationError as e:
         return jsonify({
             "error": e.error_code,
             "message": e.message,
         }), e.status_code
 
-    # 4. Transparent Model-Pending Response
-    # The real ML model is not integrated yet in Phase 2.
-    # We explicitly return model_not_configured without inventing predictions.
-    response_message = (
-        "Image validated successfully. Plant disease detection model is not configured yet."
-        if lang == "en"
-        else "Àwòrán náà wà ní àlàáfíà. Àwòṣe àyẹ̀wò àrùn kò tíì wà ní àmúlò."
-    )
+    # 4. Execute Real Model Inference
+    try:
+        predictor = get_prediction_service()
+        prediction = predictor.predict(rgb_image, lang=lang)
+    except ModelLoadError as e:
+        return jsonify({
+            "error": e.error_code,
+            "message": e.message,
+        }), e.status_code
+    except (InferenceExecutionError, PredictionError) as e:
+        return jsonify({
+            "error": e.error_code,
+            "message": e.message,
+        }), e.status_code
+    except Exception as e:
+        return jsonify({
+            "error": "unexpected_inference_error",
+            "message": f"An unexpected error occurred during prediction: {str(e)}",
+        }), 500
 
+    # 5. Return Genuine Prediction and Localized Guidance
     return jsonify({
-        "status": "model_not_configured",
-        "message": response_message,
+        "status": "success",
         "language": lang,
         "image_metadata": metadata,
+        "prediction": prediction,
     }), 200
 
 
@@ -82,3 +101,4 @@ def handle_oversized_payload(e):
         "error": "payload_too_large",
         "message": "Uploaded image exceeds the maximum permitted size of 10 MB.",
     }), 413
+

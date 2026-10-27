@@ -20,9 +20,10 @@ class ImageValidationError(Exception):
         self.status_code = status_code
 
 
-def validate_image_upload(file_storage: Any) -> Dict[str, Any]:
+def validate_and_load_image(file_storage: Any) -> Tuple[Dict[str, Any], Image.Image]:
     """
-    Safely validates an uploaded image file in memory without saving to disk.
+    Safely validates an uploaded image file in memory without saving to disk,
+    and returns both verified metadata and the loaded RGB PIL Image.
 
     Performs:
     1. Presence and non-empty checks.
@@ -31,12 +32,13 @@ def validate_image_upload(file_storage: Any) -> Dict[str, Any]:
     4. Image format verification (JPEG, PNG, WebP only).
     5. Dimension sanity checks and decompression bomb protection.
     6. Complete raster load check to catch corrupt/truncated data.
+    7. Safe RGB conversion for downstream ML inference.
 
     Args:
         file_storage: Werkzeug FileStorage object from request.files['image'].
 
     Returns:
-        dict: Verified image metadata if valid.
+        tuple: (metadata_dict, rgb_pil_image)
 
     Raises:
         ImageValidationError: If validation fails for any reason.
@@ -118,7 +120,10 @@ def validate_image_upload(file_storage: Any) -> Dict[str, Any]:
                 "size_bytes": len(data),
             }
 
-            return metadata
+            # Convert to RGB mode for consistent 3-channel input to MobileNetV2
+            rgb_image = img_loaded.convert("RGB")
+
+            return metadata, rgb_image
 
     except ImageValidationError:
         # Re-raise known validation errors
@@ -142,3 +147,13 @@ def validate_image_upload(file_storage: Any) -> Dict[str, Any]:
             message="The uploaded image file is corrupt or truncated.",
             status_code=400,
         ) from e
+
+
+def validate_image_upload(file_storage: Any) -> Dict[str, Any]:
+    """
+    Backwards-compatible wrapper: safely validates an uploaded image file
+    and returns verified metadata dictionary.
+    """
+    metadata, _ = validate_and_load_image(file_storage)
+    return metadata
+
