@@ -8,6 +8,7 @@ from transformers import AutoModelForImageClassification, MobileNetV2ImageProces
 
 from app.config import DEFAULT_CONFIDENCE_THRESHOLD, validate_confidence_threshold
 from app.services.guidance import GuidanceService
+from app.services.image_screener import screen_image_quality
 
 logger = logging.getLogger(__name__)
 
@@ -165,24 +166,91 @@ class PredictionService:
         self,
         image: Image.Image,
         selected_crop: Optional[str] = None,
-        lang: str = "en"
+        lang: str = "en",
+        screening_options: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
-        Executes genuine inference on a validated PIL Image with crop mismatch protection.
+        Executes genuine inference on a validated PIL Image with conservative
+        pre-inference quality screening and crop mismatch protection.
 
         Args:
             image: A valid PIL Image instance.
             selected_crop: Optional user-selected crop identifier (e.g. 'tomato', 'maize').
             lang: Localized guidance language ('en' or 'yo').
+            screening_options: Optional parameter overrides for image quality screener.
 
         Returns:
             dict containing class index, label, selected_crop, predicted_crop, crop_match,
-            raw model score, assessment status, safety disclaimers, and localized agronomic guidance.
+            raw model score, assessment status, safety disclaimers, screening details,
+            and localized agronomic guidance.
 
         Raises:
             ModelLoadError: If model cannot be loaded.
             InferenceExecutionError: If forward pass or tensor transformation fails.
         """
+        normalized_selected_crop = (
+            self.guidance_service.normalize_crop(selected_crop)
+            if selected_crop
+            else None
+        )
+
+        # 1. Conservative pre-inference image quality screening
+        try:
+            screening_res = screen_image_quality(image, **(screening_options or {}))
+        except Exception as e:
+            logger.error(
+                f"Image quality screening encountered an unexpected error: {e}",
+                exc_info=True,
+            )
+            fallback_guidance = self.guidance_service.get_unreliable_assessment_fallback(lang=lang)
+            return {
+                "assessment_status": "unreliable_image_quality",
+                "model_name": self.model_name,
+                "selected_crop": normalized_selected_crop or selected_crop,
+                "predicted_crop": None,
+                "crop_match": None,
+                "class_index": None,
+                "class_label": None,
+                "confidence": None,
+                "confidence_threshold": self.confidence_threshold,
+                "is_provisional_threshold": True,
+                "screening_details": {
+                    "is_acceptable": False,
+                    "rejection_code": "screening_error",
+                    "message": "Image quality screening encountered an internal error.",
+                    "metrics": {},
+                },
+                "disclaimer": (
+                    "Image quality screening could not reliably assess this photograph. "
+                    "Inference was bypassed for safety. "
+                    "Please capture a clear, well-lit photo of a single leaf."
+                ),
+                "guidance": fallback_guidance,
+            }
+
+        # If rejected by screening, prevent model inference and suppress treatment guidance
+        if not screening_res.is_acceptable:
+            fallback_guidance = self.guidance_service.get_unreliable_assessment_fallback(lang=lang)
+            return {
+                "assessment_status": "unreliable_image_quality",
+                "model_name": self.model_name,
+                "selected_crop": normalized_selected_crop or selected_crop,
+                "predicted_crop": None,
+                "crop_match": None,
+                "class_index": None,
+                "class_label": None,
+                "confidence": None,
+                "confidence_threshold": self.confidence_threshold,
+                "is_provisional_threshold": True,
+                "screening_details": screening_res.to_dict(),
+                "disclaimer": (
+                    f"Image quality screening rejected this photograph ({screening_res.rejection_code}): "
+                    f"{screening_res.message} Inference was bypassed for safety. "
+                    "Please capture a clear, well-lit photo of a single leaf against a plain background."
+                ),
+                "guidance": fallback_guidance,
+            }
+
         if not self.is_model_loaded:
             self.load_model()
 
@@ -191,11 +259,11 @@ class PredictionService:
             image = image.convert("RGB")
 
         try:
-            # 1. Preprocess image
+            # 2. Preprocess image
             inputs = self._processor(images=image, return_tensors="pt")
             pixel_values = inputs["pixel_values"].to(self.device)
 
-            # 2. Genuine inference forward pass
+            # 3. Genuine inference forward pass
             with torch.no_grad():
                 outputs = self._model(pixel_values=pixel_values)
                 logits = outputs.logits[0]
@@ -211,15 +279,9 @@ class PredictionService:
                 f"Inference execution failed during forward pass: {str(e)}"
             ) from e
 
-        # 3. Resolve class label and biological crop from official mappings
+        # 4. Resolve class label and biological crop from official mappings
         class_label = self.guidance_service.get_class_label(predicted_class_index)
         predicted_crop = self.guidance_service.get_crop_for_class(predicted_class_index)
-
-        normalized_selected_crop = (
-            self.guidance_service.normalize_crop(selected_crop)
-            if selected_crop
-            else None
-        )
 
         # Handle invalid model output index (outside 0-37)
         if class_label is None:
@@ -235,6 +297,7 @@ class PredictionService:
                 "confidence": round(confidence_score, 4),
                 "confidence_threshold": self.confidence_threshold,
                 "is_provisional_threshold": True,
+                "screening_details": screening_res.to_dict(),
                 "disclaimer": (
                     "Model output index is outside the recognized 38-class catalog. "
                     "This output is treated as invalid and inconclusive."
@@ -242,7 +305,7 @@ class PredictionService:
                 "guidance": fallback_guidance,
             }
 
-        # 4. Check for Crop Mismatch
+        # 5. Check for Crop Mismatch
         is_crop_match = (
             (normalized_selected_crop == predicted_crop)
             if normalized_selected_crop is not None
@@ -271,6 +334,7 @@ class PredictionService:
                 "confidence": round(confidence_score, 4),
                 "confidence_threshold": self.confidence_threshold,
                 "is_provisional_threshold": True,
+                "screening_details": screening_res.to_dict(),
                 "disclaimer": (
                     f"Crop mismatch detected: The image was submitted as '{selected_display}', but model visual "
                     f"features resemble '{class_label}' ({pred_display}). User crop selection does not prove "
@@ -280,7 +344,7 @@ class PredictionService:
                 "guidance": mismatch_guidance,
             }
 
-        # 5. Evaluate against provisional confidence threshold
+        # 6. Evaluate against provisional confidence threshold
         is_confident = confidence_score >= self.confidence_threshold
 
         if not is_confident:
@@ -297,6 +361,7 @@ class PredictionService:
                 "confidence": round(confidence_score, 4),
                 "confidence_threshold": self.confidence_threshold,
                 "is_provisional_threshold": True,
+                "screening_details": screening_res.to_dict(),
                 "disclaimer": (
                     f"Model confidence ({confidence_score:.2%}) is below the provisional operational threshold "
                     f"({self.confidence_threshold:.2%}). Raw model scores are not calibrated probabilities of "
@@ -307,7 +372,7 @@ class PredictionService:
                 "guidance": fallback_guidance,
             }
 
-        # 6. Retrieve localized guidance for confident, matching predictions
+        # 7. Retrieve localized guidance for confident, matching predictions
         guidance_result = self.guidance_service.get_guidance_by_index(
             predicted_class_index, lang=lang
         )
@@ -329,6 +394,7 @@ class PredictionService:
             "confidence": round(confidence_score, 4),
             "confidence_threshold": self.confidence_threshold,
             "is_provisional_threshold": True,
+            "screening_details": screening_res.to_dict(),
             "disclaimer": (
                 "Automated screening result only; not a confirmed agricultural diagnosis. "
                 "Raw model scores are uncalibrated and do not guarantee accuracy. "

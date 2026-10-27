@@ -20,6 +20,7 @@ cropscan-ai-backend/
 │   ├── services/
 │   │   ├── __init__.py          # Service layer exports
 │   │   ├── guidance.py          # GuidanceService (English & Yoruba crop/disease resolution)
+│   │   ├── image_screener.py    # Pre-inference quality screening (darkness, overexposure, texture, color)
 │   │   ├── image_validator.py   # In-memory image decoding, format verification & security guards
 │   │   └── predictor.py         # PredictionService (MobileNetV2 inference, threshold & guidance integration)
 │   └── data/
@@ -36,7 +37,8 @@ cropscan-ai-backend/
 │   ├── test_guidance.py         # Knowledge base retrieval, crop mapping & GuidanceService unit tests
 │   ├── test_health.py           # Health endpoint, routing, 404, 405, and 500 error handler tests
 │   ├── test_predict.py          # Endpoint integration, crop selection, upload security & error handling tests
-│   └── test_predictor.py        # ML service unit tests, boundary tests & genuine inference tests
+│   ├── test_predictor.py        # ML service unit tests, boundary tests & genuine inference tests
+│   └── test_screener.py         # Image quality screening unit, integration & boundary tests
 ├── .env.example                 # Documented template for local environment variables
 ├── .gitignore                   # Version control ignore rules (venv, .env, caches)
 ├── requirements.txt             # Pinned core dependencies (Flask, Pillow, PyTorch, Transformers, pytest)
@@ -79,6 +81,20 @@ CropScan AI reproduces the exact preprocessing pipeline from the official model 
 - **Uncalibrated Scores**: Raw model scores are computed via Softmax over 38 logits. They represent relative model activation among trained classes, **not calibrated probabilities** that the diagnosis is correct.
 - **Not a Confirmed Diagnosis**: CropScan AI provides automated screening aids, not a botanical or phytopathological diagnosis. Farmers must consult local agricultural extension officers before applying chemical treatments.
 - **Out-of-Distribution Vulnerability**: Confidence thresholding alone **cannot reliably detect** unsupported crops (e.g., cassava, yam), non-leaf images, or arbitrary out-of-distribution inputs. An image of a shoe or weeds may still yield an arbitrary prediction if forced through closed-set softmax classification.
+
+### Pre-Inference Image Quality Screening (Phase 7.2)
+To intercept obviously unusable inputs before expensive neural network inference, CropScan AI incorporates a conservative, lightweight pre-inference image screening layer (`app/services/image_screener.py`):
+1. **Extreme Darkness**: Mean grayscale luminance below `8.0` (out of 255) identifies pitch-black or unilluminated captures (`image_too_dark`).
+2. **Extreme Overexposure**: Mean grayscale luminance above `250.0` with contrast standard deviation below `5.0` identifies completely blown-out, white frames (`image_too_bright`).
+3. **Featureless Canvas**: Standard deviation contrast below `5.0` combined with vegetation ratio below `0.01` identifies flat, non-plant surfaces (`image_lacks_features`).
+4. **Sharpness & High-Frequency Texture**: Measures interior Laplacian variance with 1-pixel border cropping to eliminate filter boundary padding artifacts. Kept evaluative by default (`min_sharpness = None`) to preserve valid, imperfect leaves across varying phone sensors and resolutions.
+5. **Vegetation & Color Statistics**: Broad tracking of green foliage, chlorotic (yellow), and necrotic (brown blight) pixels. This metric is intentionally treated as a weak signal and **never** used alone to reject non-green diseased leaves.
+
+**Safety Behaviors:**
+- **Inference Bypass**: Images flagged by screening never reach deep-learning model execution.
+- **Guidance Suppression**: Rejected inputs receive safe fallback guidance (`data: null`, `is_healthy: null`) with no chemical treatment recommendations.
+- **Failure Safety**: Internal screening exceptions fail safely into `unreliable_image_quality` rather than passing unverified images to inference.
+- **Explicit Limitation**: Pre-inference image quality screening is a quality check, **not an out-of-distribution (OOD) detector or plant classifier**. It cannot prove botanical identity or detect unsupported crops.
 
 ---
 
@@ -248,6 +264,7 @@ Receives a crop leaf photograph and target crop selection via multipart form-dat
 - **Crop Mismatch Protection**: If the model's top predicted class belongs to a different crop family than the user's selection (e.g., user selects `tomato` but model predicts `Corn Common Rust` or `Apple Scab`), CropScan AI returns `assessment_status: "crop_mismatch"` and `crop_match: false`.
 - **Withheld Treatment Guidance**: Whenever a crop mismatch occurs, disease treatment recommendations are strictly withheld (`is_healthy: null`, `data: null`) to prevent dangerous chemical misapplication.
 - **Safe Confidence Thresholding**: Predictions matching the selected crop but scoring below the validated threshold (`0.40`) return `inconclusive_low_confidence` and advisory guidance.
+- **Pre-Inference Image Quality Screening**: Obviously unusable frames (pitch-black, blown-out white, or featureless uniform non-plant surfaces) are intercepted before model inference, returning `assessment_status: "unreliable_image_quality"` and withholding treatment guidance.
 - **In-Memory Decoding & Security**: Images are verified against true raster byte headers and decoded strictly in memory with decompression bomb guards (10,000 px max dimension).
 
 #### Example Request (PowerShell)
@@ -386,6 +403,56 @@ Invoke-RestMethod -Uri "http://127.0.0.1:5000/api/predict" -Method Post -Form $f
     "confidence_threshold": 0.40,
     "is_provisional_threshold": true,
     "disclaimer": "Model confidence (21.68%) is below the provisional operational threshold (40.00%). User crop selection does not prove or guarantee botanical crop identity. Raw model scores are not calibrated probabilities of correctness. Confidence thresholding cannot reliably detect unsupported crops, non-leaf images, or out-of-distribution inputs. This result is inconclusive and must not be treated as a confirmed diagnosis.",
+    "guidance": {
+      "status": "unreliable_assessment",
+      "class_index": null,
+      "model_class_id": null,
+      "language": "en",
+      "is_healthy": null,
+      "message": "The image could not be reliably assessed. Please capture a clear, well-lit photo of a single leaf against a plain background, or consult your local agricultural extension service for on-field diagnosis.",
+      "data": null
+    }
+  }
+}
+```
+
+#### Example Response (Image Quality Screening Rejection)
+```json
+{
+  "status": "success",
+  "selected_crop": "tomato",
+  "language": "en",
+  "image_metadata": {
+    "format": "JPEG",
+    "width": 640,
+    "height": 480,
+    "color_mode": "RGB",
+    "size_bytes": 18450
+  },
+  "prediction": {
+    "assessment_status": "unreliable_image_quality",
+    "crop_match": null,
+    "selected_crop": "tomato",
+    "predicted_crop": null,
+    "model_name": "linkanjarad/mobilenet_v2_1.0_224-plant-disease-identification",
+    "class_index": null,
+    "class_label": null,
+    "confidence": null,
+    "confidence_threshold": 0.40,
+    "is_provisional_threshold": true,
+    "screening_details": {
+      "is_acceptable": false,
+      "rejection_code": "image_too_dark",
+      "message": "The uploaded image is extremely dark (mean luminance 2.14 is below 8.00) and lacks discernible visual features.",
+      "metrics": {
+        "mean_luminance": 2.14,
+        "contrast": 1.25,
+        "sharpness": 0.0,
+        "green_pixel_ratio": 0.0,
+        "vegetation_pixel_ratio": 0.0
+      }
+    },
+    "disclaimer": "Image quality screening rejected this photograph (image_too_dark): The uploaded image is extremely dark (mean luminance 2.14 is below 8.00) and lacks discernible visual features. Inference was bypassed for safety. Please capture a clear, well-lit photo of a single leaf against a plain background.",
     "guidance": {
       "status": "unreliable_assessment",
       "class_index": null,

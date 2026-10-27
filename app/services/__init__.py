@@ -7,6 +7,10 @@ This package houses backend business logic and service modules:
 """
 
 from app.services.guidance import GuidanceService
+from app.services.image_screener import (
+    ScreeningResult,
+    screen_image_quality,
+)
 from app.services.image_validator import (
     ImageValidationError,
     validate_and_load_image,
@@ -28,7 +32,9 @@ __all__ = [
     "ModelLoadError",
     "PredictionError",
     "PredictionService",
+    "ScreeningResult",
     "get_prediction_service",
+    "screen_image_quality",
     "set_prediction_service",
     "validate_and_load_image",
     "validate_image_upload",

@@ -135,7 +135,7 @@ class TestPredictionServiceUnitMocks:
         mock_output.logits = self._create_mock_logits(top_index=29, top_score=0.39)
         mock_predictor._model.return_value = mock_output
 
-        img = Image.new("RGB", (100, 100))
+        img = Image.new("RGB", (100, 100), (34, 139, 34))
         result = mock_predictor.predict(img, lang="en")
 
         assert result["assessment_status"] == "inconclusive_low_confidence"
@@ -155,7 +155,7 @@ class TestPredictionServiceUnitMocks:
         mock_output.logits = self._create_mock_logits(top_index=29, top_score=0.40)
         mock_predictor._model.return_value = mock_output
 
-        img = Image.new("RGB", (100, 100))
+        img = Image.new("RGB", (100, 100), (34, 139, 34))
         result = mock_predictor.predict(img, lang="en")
 
         assert result["assessment_status"] == "confident"
@@ -172,7 +172,7 @@ class TestPredictionServiceUnitMocks:
         mock_output.logits = self._create_mock_logits(top_index=29, top_score=0.88)
         mock_predictor._model.return_value = mock_output
 
-        img = Image.new("RGB", (100, 100))
+        img = Image.new("RGB", (100, 100), (34, 139, 34))
         result = mock_predictor.predict(img, lang="en")
 
         assert result["assessment_status"] == "confident"
@@ -186,7 +186,7 @@ class TestPredictionServiceUnitMocks:
         mock_output.logits = self._create_mock_logits(top_index=29, top_score=0.75)
         mock_predictor._model.return_value = mock_output
 
-        img = Image.new("RGB", (100, 100))
+        img = Image.new("RGB", (100, 100), (34, 139, 34))
         result = mock_predictor.predict(img, lang="yo")
 
         assert result["assessment_status"] == "confident"
@@ -202,7 +202,7 @@ class TestPredictionServiceUnitMocks:
         mock_output.logits = self._create_mock_logits(top_index=0, top_score=0.82)
         mock_predictor._model.return_value = mock_output
 
-        img = Image.new("RGB", (100, 100))
+        img = Image.new("RGB", (100, 100), (34, 139, 34))
         result = mock_predictor.predict(img, lang="en")
 
         assert result["assessment_status"] == "recognized_unsupported_crop"
@@ -217,7 +217,7 @@ class TestPredictionServiceUnitMocks:
         mock_output.logits = self._create_mock_logits(top_index=45, top_score=0.90, num_classes=50)
         mock_predictor._model.return_value = mock_output
 
-        img = Image.new("RGB", (100, 100))
+        img = Image.new("RGB", (100, 100), (34, 139, 34))
         result = mock_predictor.predict(img, lang="en")
 
         assert result["assessment_status"] == "invalid_model_output"
@@ -235,7 +235,7 @@ class TestPredictionServiceUnitMocks:
         mock_output.logits = self._create_mock_logits(top_index=2, top_score=0.85)
         mock_predictor._model.return_value = mock_output
 
-        img = Image.new("RGB", (100, 100))
+        img = Image.new("RGB", (100, 100), (34, 139, 34))
         result = mock_predictor.predict(img, selected_crop="tomato", lang="en")
 
         assert result["assessment_status"] == "crop_mismatch"
@@ -260,7 +260,7 @@ class TestPredictionServiceUnitMocks:
         mock_output.logits = self._create_mock_logits(top_index=8, top_score=0.92)
         mock_predictor._model.return_value = mock_output
 
-        img = Image.new("RGB", (100, 100))
+        img = Image.new("RGB", (100, 100), (34, 139, 34))
         result = mock_predictor.predict(img, selected_crop="tomato", lang="yo")
 
         assert result["assessment_status"] == "crop_mismatch"
@@ -278,7 +278,7 @@ class TestPredictionServiceUnitMocks:
         mock_output.logits = self._create_mock_logits(top_index=29, top_score=0.88)
         mock_predictor._model.return_value = mock_output
 
-        img = Image.new("RGB", (100, 100))
+        img = Image.new("RGB", (100, 100), (34, 139, 34))
         result = mock_predictor.predict(img, selected_crop="tomato", lang="en")
 
         assert result["assessment_status"] == "confident"
@@ -294,7 +294,7 @@ class TestPredictionServiceUnitMocks:
         mock_output.logits = self._create_mock_logits(top_index=29, top_score=0.35)
         mock_predictor._model.return_value = mock_output
 
-        img = Image.new("RGB", (100, 100))
+        img = Image.new("RGB", (100, 100), (34, 139, 34))
         result = mock_predictor.predict(img, selected_crop="tomato", lang="en")
 
         assert result["assessment_status"] == "inconclusive_low_confidence"
@@ -307,7 +307,7 @@ class TestPredictionServiceUnitMocks:
         """Verify that forward pass failures raise InferenceExecutionError."""
         mock_predictor._model.side_effect = RuntimeError("CUDA/CPU tensor memory error")
 
-        img = Image.new("RGB", (100, 100))
+        img = Image.new("RGB", (100, 100), (34, 139, 34))
         with pytest.raises(InferenceExecutionError) as exc_info:
             mock_predictor.predict(img, selected_crop="tomato", lang="en")
 
