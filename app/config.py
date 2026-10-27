@@ -10,6 +10,103 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 DEFAULT_CONFIDENCE_THRESHOLD: float = 0.40
+DEFAULT_PORT: int = 5000
+DEFAULT_DEV_SECRET_KEY: str = "dev-secret-key-cropscan"
+INSECURE_DEV_SECRET_KEYS: set[str] = {
+    "dev-secret-key-cropscan",
+    "dev-secret-key-cropscan-change-in-production",
+}
+
+
+def validate_port(value: Any, default: int = DEFAULT_PORT) -> int:
+    """
+    Validates and converts a port setting to an integer in the inclusive range 1..65535.
+
+    Rules:
+    - If value is None: returns default (5000) without warning.
+    - If value is a boolean or float: logs warning and returns default.
+    - If value is an empty or whitespace-only string: logs warning and returns default.
+    - If value is a non-integer string (e.g. 'abc', '5000.5'): logs warning and returns default.
+    - If value is an integer outside [1, 65535]: logs warning and returns default.
+    - Otherwise returns the validated integer port.
+    """
+    if value is None:
+        return default
+
+    # Booleans are subclasses of int in Python; reject them explicitly
+    if isinstance(value, bool):
+        logger.warning(
+            f"Invalid non-integer PORT '{value}'. Falling back to default {default}."
+        )
+        return default
+
+    # Floats (e.g. 5000.5 or 5000.0) are rejected as invalid port types
+    if isinstance(value, float):
+        logger.warning(
+            f"Invalid non-integer PORT '{value}'. Falling back to default {default}."
+        )
+        return default
+
+    if isinstance(value, str):
+        val_str = value.strip()
+        if not val_str:
+            logger.warning(
+                f"Empty or whitespace-only PORT. Falling back to default {default}."
+            )
+            return default
+        try:
+            port_val = int(val_str)
+        except (ValueError, TypeError):
+            logger.warning(
+                f"Invalid non-integer PORT '{value}'. Falling back to default {default}."
+            )
+            return default
+    elif isinstance(value, int):
+        port_val = value
+    else:
+        try:
+            port_val = int(value)
+        except (ValueError, TypeError):
+            logger.warning(
+                f"Invalid non-integer PORT '{value}'. Falling back to default {default}."
+            )
+            return default
+
+    if not (1 <= port_val <= 65535):
+        logger.warning(
+            f"PORT '{value}' out of valid range [1, 65535]. Falling back to default {default}."
+        )
+        return default
+
+    return port_val
+
+
+def validate_production_secret(secret_key: Optional[str]) -> str:
+    """
+    Validates that a production secret key is provided, non-empty, non-whitespace,
+    and not equal to any known insecure development default.
+
+    Raises:
+        ValueError: If secret_key is missing, empty, whitespace-only,
+            or equals an insecure development default. Never logs or echoes the secret value.
+    """
+    if secret_key is None:
+        raise ValueError(
+            "Production requires a valid, non-default SECRET_KEY environment variable. "
+            "No SECRET_KEY was provided."
+        )
+    if not isinstance(secret_key, str) or not secret_key.strip():
+        raise ValueError(
+            "Production requires a valid, non-default SECRET_KEY environment variable. "
+            "SECRET_KEY cannot be empty or whitespace-only."
+        )
+    stripped = secret_key.strip()
+    if stripped in INSECURE_DEV_SECRET_KEYS or stripped.startswith("dev-secret-key-cropscan"):
+        raise ValueError(
+            "Production requires a valid, non-default SECRET_KEY environment variable. "
+            "The default development key is not permitted in production."
+        )
+    return stripped
 
 
 def validate_confidence_threshold(
@@ -67,7 +164,7 @@ def validate_confidence_threshold(
 
 class Config:
     """Base configuration settings shared across environments."""
-    SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key-cropscan")
+    SECRET_KEY = os.getenv("SECRET_KEY", DEFAULT_DEV_SECRET_KEY)
     TESTING = False
     DEBUG = False
     JSON_SORT_KEYS = False
@@ -101,6 +198,7 @@ class TestingConfig(Config):
 class ProductionConfig(Config):
     """Configuration for production deployment."""
     DEBUG = False
+    SECRET_KEY = os.getenv("SECRET_KEY")
 
 
 config_by_name = {

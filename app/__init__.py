@@ -8,7 +8,11 @@ from werkzeug.exceptions import (
     RequestEntityTooLarge,
 )
 
-from app.config import config_by_name
+from app.config import (
+    ProductionConfig,
+    config_by_name,
+    validate_production_secret,
+)
 from app.routes.health import health_bp
 from app.routes.predict import predict_bp
 
@@ -18,9 +22,10 @@ def create_app(config_name=None):
     Application factory for CropScan AI Backend.
 
     Args:
-        config_name (str, optional): Name of configuration to load
-            ('development', 'testing', 'production'). Defaults to None,
-            which resolves to the FLASK_ENV environment variable or 'development'.
+        config_name (str or type, optional): Name of configuration to load
+            ('development', 'testing', 'production') or a Config class.
+            Defaults to None, which resolves to the FLASK_ENV environment
+            variable or 'development'.
 
     Returns:
         Flask: The configured Flask application instance.
@@ -31,8 +36,22 @@ def create_app(config_name=None):
     app = Flask(__name__)
 
     # Load configuration
-    config_class = config_by_name.get(config_name, config_by_name["default"])
+    if isinstance(config_name, type):
+        config_class = config_name
+    else:
+        config_class = config_by_name.get(config_name, config_by_name["default"])
     app.config.from_object(config_class)
+
+    # Validate production configuration safeguards
+    is_production = (
+        config_name == "production"
+        or (isinstance(config_class, type) and issubclass(config_class, ProductionConfig))
+    )
+    if is_production:
+        env_secret = os.getenv("SECRET_KEY")
+        secret_to_validate = env_secret if env_secret is not None else app.config.get("SECRET_KEY")
+        validated_secret = validate_production_secret(secret_to_validate)
+        app.config["SECRET_KEY"] = validated_secret
 
     # Register blueprints
     app.register_blueprint(health_bp)
