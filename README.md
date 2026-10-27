@@ -185,6 +185,45 @@ All **42 automated tests** execute in `~3s`:
 
 ---
 
+## Real Leaf Image Empirical Validation (Phase 4)
+
+To validate live model inference and end-to-end endpoint integration prior to adding new features, 7 authentic real leaf photographs were evaluated through the actual `POST /api/predict` endpoint using the loaded MobileNetV2 model weights.
+
+### Image Sources & Licensing
+1. **PlantVillage Dataset** (`spMohanty/PlantVillage-Dataset`): Licensed under **CC0 1.0 Universal (Public Domain Dedication)**. Laboratory-photographed leaves on uniform backgrounds across standardized disease and healthy classes.
+2. **Wikimedia Commons** (`File:Cassava plant leaf.jpg`): Licensed under **CC BY-SA 4.0**. High-resolution in-field photograph of a cassava (*Manihot esculenta*) leaf, an African staple crop completely absent from the 38-class PlantVillage dataset.
+
+### Empirical Test Matrix & Observed Outputs
+
+| Test Image | Crop & True Condition | Expected Label | Predicted Class | Raw Score | Assessment Status | Localized Guidance | Validation Outcome |
+| :--- | :--- | :--- | :--- | :---: | :--- | :--- | :--- |
+| `tomato_early_blight.jpg` | Tomato (Diseased) | Tomato with Early Blight | Tomato with Early Blight (idx 29) | `0.8394` | `confident` | `success` (`tomato_early_blight`) | **Accurate detection & guidance** |
+| `tomato_healthy.jpg` | Tomato (Healthy) | Healthy Tomato Plant | Healthy Tomato Plant (idx 37) | `1.0000` | `confident` | `success` (`healthy_tomato`) | **Accurate detection (no false alarm)** |
+| `corn_common_rust.jpg` | Maize (Diseased) | Corn (Maize) with Common Rust | Corn with Common Rust (idx 8) | `0.9989` | `confident` | `success` (`corn_common_rust`) | **Accurate detection & guidance** |
+| `bell_pepper_healthy.jpg` | Bell Pepper (Healthy) | Healthy Bell Pepper Plant | Healthy Bell Pepper (idx 19) | `0.9999` | `confident` | `success` (`healthy_pepper`) | **Accurate detection (no false alarm)** |
+| `potato_late_blight.jpg` | Potato (Diseased) | Potato with Late Blight | Potato with Late Blight (idx 21) | `0.6684` | `confident` | `success` (`potato_late_blight`) | **Accurate detection & guidance** |
+| `apple_scab.jpg` | Apple (Diseased, Out-of-Scope) | Apple Scab (idx 0) | Apple Scab (idx 0) | `0.9979` | `recognized_unsupported_crop` | `recognized_unsupported_crop` | **Safe scope separation (never claims healthy)** |
+| `cassava_leaf_unsupported.jpg` | Cassava (Unsupported Crop) | Out-of-Distribution (None) | Cedar Apple Rust (idx 2) | `0.3192` | `inconclusive_low_confidence` | `unreliable_assessment` | **Safely rejected via threshold (0.3192 < 0.40)** |
+
+### Critical Empirical Insights & Limitations
+
+1. **Closed-Set Vulnerability on Out-of-Distribution Inputs**:
+   - Because MobileNetV2 uses a closed-set softmax classification head over 38 classes, any image passed into the model is mathematically forced to distribute probability across those 38 classes.
+   - For the **Cassava leaf**, the model assigned `0.3192` to `"Cedar Apple Rust"` (index 2).
+   - Because `0.3192` fell below the provisional threshold (`0.40`), CropScan AI safely prevented a false diagnosis and returned an inconclusive advisory response (`is_healthy: None`).
+   - **Crucial Caution**: Confidence thresholding alone is **not** an out-of-distribution detector. A different unsupported crop or complex background image could easily produce an activation $\ge 0.40$, resulting in a confident misdiagnosis.
+
+2. **Provisional Nature of the 0.40 Threshold**:
+   - The threshold of `0.40` was selected as a provisional operational baseline. It is **not clinically or statistically validated**.
+   - Setting a threshold cannot be validated on 7 images; genuine operational calibration requires hundreds of field-collected images across target ecologies.
+
+3. **Architectural Recommendations for Future Phases**:
+   - **Frontend Crop Selector**: Require users to specify their target crop (e.g., Tomato, Maize) before diagnosis. If the model's top prediction does not match the user's selected crop family, the system should reject the image as mismatched.
+   - **Two-Stage Classifier Pipeline**: Introduce an upstream lightweight crop-species classifier (or open-set anomaly detector) to reject non-leaf or unsupported crops (e.g., cassava, yam, weeds) before disease inference.
+
+---
+
+
 ## Available Endpoints
 
 ### 1. Health Check
