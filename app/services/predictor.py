@@ -1,6 +1,7 @@
 import logging
 import os
 from typing import Any, Dict, Optional, Tuple, Union
+import numpy as np
 import torch
 from flask import current_app, has_app_context
 from PIL import Image
@@ -194,9 +195,13 @@ class PredictionService:
             else None
         )
 
-        # 1. Conservative pre-inference image quality screening
+        # 1. Conservative pre-inference image quality and leaf presence screening
+        screening_opts = dict(screening_options or {})
+        if "check_leaf_presence" not in screening_opts and "min_vegetation_ratio" not in screening_opts:
+            screening_opts["check_leaf_presence"] = True
+
         try:
-            screening_res = screen_image_quality(image, **(screening_options or {}))
+            screening_res = screen_image_quality(image, **screening_opts)
         except Exception as e:
             logger.error(
                 f"Image quality screening encountered an unexpected error: {e}",
@@ -230,9 +235,34 @@ class PredictionService:
 
         # If rejected by screening, prevent model inference and suppress treatment guidance
         if not screening_res.is_acceptable:
-            fallback_guidance = self.guidance_service.get_unreliable_assessment_fallback(lang=lang)
+            rejection_code = screening_res.rejection_code
+            if rejection_code in ("not_a_leaf", "no_leaf_detected"):
+                assessment_status = "not_a_leaf"
+                fallback_guidance = self.guidance_service.get_not_a_leaf_fallback(lang=lang)
+                disclaimer = (
+                    "A kò rí ewé irúgbìn tó ṣeé wò nínú àwòrán yìí. Ìmọ̀ ẹ̀rọ dá àwọn ohun tí kì í ṣe ewéko tàbí àìtó àmì ewé mọ̀. Jọ̀wọ́ ya àwòrán ewé kan ṣoṣo ní tòsí kedere."
+                    if lang == "yo"
+                    else "No assessable crop leaf was detected in this photograph. Automated screening detected non-plant objects or insufficient leaf tissue. Inference was bypassed for safety. Please upload a clear photo of a single crop leaf."
+                )
+            else:
+                assessment_status = "unreliable_image_quality"
+                fallback_guidance = self.guidance_service.get_unreliable_assessment_fallback(lang=lang)
+                disclaimer = (
+                    (
+                        f"Àyẹ̀wò dídára àwòrán kọ àwòrán yìí ({screening_res.rejection_code}): "
+                        f"{screening_res.message} A kò ṣe àyẹ̀wò fún ààbò rẹ. "
+                        "Jọ̀wọ́ ya àwòrán ewé kan ṣoṣo tó mọ́lẹ̀ kedere."
+                    )
+                    if lang == "yo"
+                    else (
+                        f"Image quality screening rejected this photograph ({screening_res.rejection_code}): "
+                        f"{screening_res.message} Inference was bypassed for safety. "
+                        "Please capture a clear, well-lit photo of a single leaf against a plain background."
+                    )
+                )
+
             return {
-                "assessment_status": "unreliable_image_quality",
+                "assessment_status": assessment_status,
                 "model_name": self.model_name,
                 "selected_crop": normalized_selected_crop or selected_crop,
                 "predicted_crop": None,
@@ -243,12 +273,33 @@ class PredictionService:
                 "confidence_threshold": self.confidence_threshold,
                 "is_provisional_threshold": True,
                 "screening_details": screening_res.to_dict(),
-                "disclaimer": (
-                    f"Image quality screening rejected this photograph ({screening_res.rejection_code}): "
-                    f"{screening_res.message} Inference was bypassed for safety. "
-                    "Please capture a clear, well-lit photo of a single leaf against a plain background."
-                ),
+                "disclaimer": disclaimer,
                 "guidance": fallback_guidance,
+            }
+
+        # Check if selected crop was provided but is unsupported
+        if selected_crop is not None and not self.guidance_service.is_crop_supported(selected_crop):
+            unsupported_guidance = self.guidance_service.get_unsupported_crop_fallback(
+                crop=selected_crop, lang=lang
+            )
+            return {
+                "assessment_status": "unsupported_crop",
+                "model_name": self.model_name,
+                "selected_crop": selected_crop,
+                "predicted_crop": None,
+                "crop_match": False,
+                "class_index": None,
+                "class_label": None,
+                "confidence": None,
+                "confidence_threshold": self.confidence_threshold,
+                "is_provisional_threshold": True,
+                "screening_details": screening_res.to_dict(),
+                "disclaimer": (
+                    f"Irúgbìn '{selected_crop}' kò tíì wà nínú àkójọ CropScan AI. A dáwọ́ ìtọ́sọ́nà dúró láti dènà ewu lílo oògùn tí kò tọ́."
+                    if lang == "yo"
+                    else f"Crop '{selected_crop}' is not currently supported in CropScan AI. Guidance is withheld to prevent chemical misapplication."
+                ),
+                "guidance": unsupported_guidance,
             }
 
         if not self.is_model_loaded:
@@ -273,13 +324,29 @@ class PredictionService:
                 predicted_class_index = int(top_idx.item())
                 confidence_score = float(top_prob.item())
 
+            # 4. Uncertainty & Crop Probability Distribution Analysis
+            probs_np = probabilities.detach().cpu().numpy()
+            probs_clipped = np.clip(probs_np, 1e-12, 1.0)
+            entropy = float(-np.sum(probs_clipped * np.log(probs_clipped)))
+            num_cls = len(probs_np)
+            max_entropy = float(np.log(num_cls)) if num_cls > 1 else 1.0
+            normalized_entropy = round(entropy / max_entropy, 4)
+
+            # Crop-level probability aggregation across all model classes
+            crop_probabilities: Dict[str, float] = {}
+            for idx_val, p_val in enumerate(probs_np):
+                c_name = self.guidance_service.get_crop_for_class(idx_val)
+                if c_name:
+                    crop_probabilities[c_name] = crop_probabilities.get(c_name, 0.0) + float(p_val)
+            crop_probabilities = {k: round(v, 4) for k, v in crop_probabilities.items()}
+
         except Exception as e:
             logger.error(f"Inference execution failed: {e}", exc_info=True)
             raise InferenceExecutionError(
                 f"Inference execution failed during forward pass: {str(e)}"
             ) from e
 
-        # 4. Resolve class label and biological crop from official mappings
+        # 5. Resolve class label and biological crop from official mappings
         class_label = self.guidance_service.get_class_label(predicted_class_index)
         predicted_crop = self.guidance_service.get_crop_for_class(predicted_class_index)
 
@@ -298,6 +365,8 @@ class PredictionService:
                 "confidence_threshold": self.confidence_threshold,
                 "is_provisional_threshold": True,
                 "screening_details": screening_res.to_dict(),
+                "entropy": normalized_entropy,
+                "crop_probabilities": crop_probabilities,
                 "disclaimer": (
                     "Model output index is outside the recognized 38-class catalog. "
                     "This output is treated as invalid and inconclusive."
@@ -305,7 +374,7 @@ class PredictionService:
                 "guidance": fallback_guidance,
             }
 
-        # 5. Check for Crop Mismatch
+        # 6. Check for Crop Mismatch
         is_crop_match = (
             (normalized_selected_crop == predicted_crop)
             if normalized_selected_crop is not None
@@ -335,16 +404,27 @@ class PredictionService:
                 "confidence_threshold": self.confidence_threshold,
                 "is_provisional_threshold": True,
                 "screening_details": screening_res.to_dict(),
+                "entropy": normalized_entropy,
+                "crop_probabilities": crop_probabilities,
                 "disclaimer": (
-                    f"Crop mismatch detected: The image was submitted as '{selected_display}', but model visual "
-                    f"features resemble '{class_label}' ({pred_display}). User crop selection does not prove "
-                    "ground-truth botanical identity. Disease-specific treatment guidance is withheld to prevent "
-                    "chemical misapplication. Consult a local agricultural extension officer."
+                    (
+                        f"Àìbáramu irúgbìn wáyé: O fi ewé yìí ránṣẹ́ gẹ́gẹ́ bí '{selected_display}', ṣùgbọ́n àwòṣe náà dá àwọn àmì "
+                        f"àrùn mọ̀ tó jọ '{class_label}' ({pred_display}). Yíyan irúgbìn kò fi ìdí rẹ̀ múlẹ̀ pé irúgbìn "
+                        "náà jẹ́ bẹ́ẹ̀ gan-an. A dáwọ́ ìtọ́sọ́nà ìtọ́jú dúró láti dènà lílo oògùn tí kò tọ́. "
+                        "Jọ̀wọ́ kan sí òṣìṣẹ́ àgbẹ̀ agbègbè rẹ."
+                    )
+                    if lang == "yo"
+                    else (
+                        f"Crop mismatch detected: The image was submitted as '{selected_display}', but model visual "
+                        f"features resemble '{class_label}' ({pred_display}). User crop selection does not prove "
+                        "ground-truth botanical identity. Disease-specific treatment guidance is withheld to prevent "
+                        "chemical misapplication. Consult a local agricultural extension officer."
+                    )
                 ),
                 "guidance": mismatch_guidance,
             }
 
-        # 6. Evaluate against provisional confidence threshold
+        # 7. Evaluate against provisional confidence threshold
         is_confident = confidence_score >= self.confidence_threshold
 
         if not is_confident:
@@ -362,26 +442,46 @@ class PredictionService:
                 "confidence_threshold": self.confidence_threshold,
                 "is_provisional_threshold": True,
                 "screening_details": screening_res.to_dict(),
+                "entropy": normalized_entropy,
+                "crop_probabilities": crop_probabilities,
                 "disclaimer": (
-                    f"Model confidence ({confidence_score:.2%}) is below the provisional operational threshold "
-                    f"({self.confidence_threshold:.2%}). Raw model scores are not calibrated probabilities of "
-                    "correctness. Confidence thresholding cannot reliably detect unsupported crops, non-leaf "
-                    "images, or out-of-distribution inputs. User crop selection does not prove botanical identity. "
-                    "This result is inconclusive and must not be treated as a confirmed diagnosis."
+                    (
+                        f"Ìdánilójú àwòṣe ({confidence_score:.2%}) kéré sí ìwọ̀n tí a là kalẹ̀ "
+                        f"({self.confidence_threshold:.2%}). Àbájáde yìí kò tíì ní àrídájú, "
+                        "a kò sì gbọdọ̀ lò ó bí àyẹ̀wò àìsàn tó péye."
+                    )
+                    if lang == "yo"
+                    else (
+                        f"Model confidence ({confidence_score:.2%}) is below the provisional operational threshold "
+                        f"({self.confidence_threshold:.2%}). Raw model scores are not calibrated probabilities of "
+                        "correctness. Confidence thresholding cannot reliably detect unsupported crops, non-leaf "
+                        "images, or out-of-distribution inputs. User crop selection does not prove botanical identity. "
+                        "This result is inconclusive and must not be treated as a confirmed diagnosis."
+                    )
                 ),
                 "guidance": fallback_guidance,
             }
 
-        # 7. Retrieve localized guidance for confident, matching predictions
+        # 8. Retrieve localized guidance for confident, matching predictions
         guidance_result = self.guidance_service.get_guidance_by_index(
             predicted_class_index, lang=lang
         )
 
-        assessment_status = (
-            "confident"
-            if guidance_result["status"] == "success"
-            else guidance_result["status"]
-        )
+        is_healthy = bool(guidance_result.get("is_healthy", False))
+        if is_healthy:
+            effective_crop = normalized_selected_crop or predicted_crop
+            if self.guidance_service.has_healthy_class(effective_crop):
+                assessment_status = "healthy"
+            else:
+                # Crop lacks a verified healthy class in model (e.g. Citrus) - must never claim healthy
+                assessment_status = "inconclusive_low_confidence"
+                guidance_result = self.guidance_service.get_unreliable_assessment_fallback(lang=lang)
+        else:
+            assessment_status = (
+                "confident"
+                if guidance_result["status"] == "success"
+                else guidance_result["status"]
+            )
 
         return {
             "assessment_status": assessment_status,
@@ -395,11 +495,22 @@ class PredictionService:
             "confidence_threshold": self.confidence_threshold,
             "is_provisional_threshold": True,
             "screening_details": screening_res.to_dict(),
+            "entropy": normalized_entropy,
+            "crop_probabilities": crop_probabilities,
             "disclaimer": (
-                "Automated screening result only; not a confirmed agricultural diagnosis. "
-                "Raw model scores are uncalibrated and do not guarantee accuracy. "
-                "User crop selection does not prove botanical identity. "
-                "Always consult local agricultural extension officers before applying treatments."
+                (
+                    "Àbájáde àyẹ̀wò ìmọ̀ ẹ̀rọ nìkan ni èyí; kì í ṣe àyẹ̀wò àrídájú lórí oko. "
+                    "Àwọn nọ́ḿbà àwòṣe kò tíì fìdí múlẹ̀ pípé. "
+                    "Yíyan irúgbìn kò fi ìdí rẹ̀ múlẹ̀ pé irúgbìn náà jẹ́ bẹ́ẹ̀ gan-an. "
+                    "Máa kan sí àwọn agbóṣẹ́ àgbẹ̀ agbègbè rẹ kí o tó lo oògùn ètò ìtọ́jú."
+                )
+                if lang == "yo"
+                else (
+                    "Automated screening result only; not a confirmed agricultural diagnosis. "
+                    "Raw model scores are uncalibrated and do not guarantee accuracy. "
+                    "User crop selection does not prove botanical identity. "
+                    "Always consult local agricultural extension officers before applying treatments."
+                )
             ),
             "guidance": guidance_result,
         }

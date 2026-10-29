@@ -22,6 +22,16 @@ class GuidanceService:
     # Supported crop identifiers for the Nigerian prototype scope
     SUPPORTED_CROPS = ("tomato", "maize", "bell_pepper", "citrus", "potato")
 
+    # Authoritative mapping of supported crops to their verified healthy class indices.
+    # CRITICAL: 'citrus' is omitted because the 38-class PlantVillage model contains ONLY
+    # 'Orange with Citrus Greening' (index 15) and has NO healthy citrus class.
+    HEALTHY_CLASSES: Dict[str, int] = {
+        "tomato": 37,        # "Healthy Tomato Plant"
+        "maize": 10,         # "Healthy Corn (Maize) Plant"
+        "potato": 22,        # "Healthy Potato Plant"
+        "bell_pepper": 19,   # "Healthy Bell Pepper Plant"
+    }
+
     # Common aliases mapping to canonical crop identifiers
     CROP_ALIASES = {
         "tomato": "tomato",
@@ -108,6 +118,31 @@ class GuidanceService:
         str_index = str(class_index).strip()
         return self._class_to_crop.get(str_index)
 
+    def get_crop_classes(self, crop_name: Optional[str]) -> List[int]:
+        """Return list of model class indices belonging to the specified crop."""
+        canonical = self.normalize_crop(crop_name)
+        if not canonical:
+            return []
+        return [
+            int(idx)
+            for idx, c in self._class_to_crop.items()
+            if c == canonical
+        ]
+
+    def get_healthy_class(self, crop_name: Optional[str]) -> Optional[int]:
+        """
+        Return the model class index for a supported crop's healthy class.
+        Returns None if the crop has no healthy class in the model catalog (e.g. Citrus).
+        """
+        canonical = self.normalize_crop(crop_name)
+        if not canonical:
+            return None
+        return self.HEALTHY_CLASSES.get(canonical)
+
+    def has_healthy_class(self, crop_name: Optional[str]) -> bool:
+        """Returns True if the crop has a verified healthy class in the model catalog."""
+        return self.get_healthy_class(crop_name) is not None
+
     @property
     def total_model_classes(self) -> int:
         """Total number of classes recognized by the underlying model."""
@@ -181,6 +216,22 @@ class GuidanceService:
                     break
 
         record = catalog.get(model_class_id)
+
+        # Fallback when Yoruba guidance is missing for a supported crop
+        if record is None and lang == "yo" and model_class_id in self._disease_info_en:
+            en_record = self._disease_info_en[model_class_id]
+            return {
+                "status": "success",
+                "class_index": class_index,
+                "model_class_id": model_class_id,
+                "language": "en",
+                "is_healthy": (en_record.get("status") == "healthy"),
+                "message": (
+                    "Ìtọ́sọ́nà ìtọ́jú ní èdè Yorùbá kò tíì wà lárọ̀ọ́wọ́tó fún àrùn yìí. "
+                    "A pèsè ìtọ́sọ́nà lédè Gẹ̀ẹ́sì fún ìrànlọ́wọ́ rẹ."
+                ),
+                "data": en_record,
+            }
 
         # Case 2: Recognized by model, but no localized guidance record yet
         if record is None:
@@ -275,6 +326,63 @@ class GuidanceService:
                 f"({pred_display}). A dáwọ́ ìtọ́sọ́nà ìtọ́jú dúró láti dènà lílo oògùn tí kò tọ́. "
                 "Yíyan irúgbìn kò fi ìdí rẹ̀ múlẹ̀ pé irúgbìn náà jẹ́ bẹ́ẹ̀ gan-an. "
                 "Jọ̀wọ́ ṣàyẹ̀wò irúgbìn tí o yàn tàbí kí o kan sí òṣìṣẹ́ àgbẹ̀ agbègbè rẹ fún àyẹ̀wò lórí oko."
+            ),
+            "data": None,
+        }
+
+    def get_unsupported_crop_fallback(
+        self,
+        crop: Optional[str],
+        lang: str = "en"
+    ) -> Dict[str, Any]:
+        """
+        Structured fallback when an unsupported crop is submitted or detected.
+        Withholds disease-specific treatment to prevent chemical misapplication.
+        Never claims the plant is healthy.
+        """
+        lang = self._normalize_lang(lang)
+        crop_display = str(crop).replace("_", " ").title() if crop else "Unknown"
+
+        return {
+            "status": "unsupported_crop",
+            "selected_crop": crop,
+            "predicted_crop": None,
+            "model_class_id": None,
+            "language": lang,
+            "is_healthy": None,
+            "message": (
+                f"Crop '{crop_display}' is not currently supported in CropScan AI. "
+                "Our validated catalog covers Maize, Tomato, Bell Pepper, Citrus, and Potato. "
+                "Disease-specific treatment guidance is withheld to prevent misdiagnosis. "
+                "Please consult a local agricultural extension officer."
+                if lang == "en"
+                else f"Irúgbìn '{crop_display}' kò tíì wà nínú àkójọ CropScan AI ní báyìí. "
+                "Àwọn ohun ọ̀gbìn tí a fọwọ́ sí ni Àgbàdo, Tòmátò, Ata, Ọsàn, àti Pọtétò. "
+                "A dáwọ́ ìtọ́sọ́nà ìtọ́jú dúró láti dènà lílo oògùn tí kò tọ́. "
+                "Jọ̀wọ́ kan sí òṣìṣẹ́ àgbẹ̀ agbègbè rẹ fún ìrànlọ́wọ́."
+            ),
+            "data": None,
+        }
+
+    def get_not_a_leaf_fallback(self, lang: str = "en") -> Dict[str, Any]:
+        """
+        Structured fallback when an image does not contain an assessable crop leaf.
+        """
+        lang = self._normalize_lang(lang)
+        return {
+            "status": "not_a_leaf",
+            "class_index": None,
+            "model_class_id": None,
+            "language": lang,
+            "is_healthy": None,
+            "message": (
+                "No assessable crop leaf was detected in this photograph. "
+                "Automated screening detected non-plant objects or insufficient leaf tissue. "
+                "Please upload a clear, well-lit photo of a single crop leaf."
+                if lang == "en"
+                else "A kò rí ewé irúgbìn tó ṣeé wò nínú àwòrán yìí. "
+                "Ìmọ̀ ẹ̀rọ dá àwọn ohun tí kì í ṣe ewéko tàbí àìtó àmì ewé mọ̀. "
+                "Jọ̀wọ́ ya àwòrán ewé kan ṣoṣo ní tòsí kedere."
             ),
             "data": None,
         }

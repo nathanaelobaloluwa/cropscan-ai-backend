@@ -27,6 +27,7 @@ DEFAULT_MIN_LUMINANCE: float = 8.0     # Mean luminance below this is pitch blac
 DEFAULT_MAX_LUMINANCE: float = 250.0   # Mean luminance above this is blown out
 DEFAULT_MIN_CONTRAST: float = 5.0      # Standard deviation below this indicates flat/uniform field
 DEFAULT_MIN_SHARPNESS: Optional[float] = None  # Sharpness threshold (optional/evaluative)
+DEFAULT_MIN_VEGETATION_RATIO: float = 0.08     # Minimum vegetation ratio (8%) for assessable leaf presence
 
 # Maximum dimension to analyze during screening (ensures constant-time execution)
 SCREENING_ANALYSIS_SIZE: Tuple[int, int] = (512, 512)
@@ -178,15 +179,19 @@ def screen_image_quality(
     max_luminance: float = DEFAULT_MAX_LUMINANCE,
     min_contrast: float = DEFAULT_MIN_CONTRAST,
     min_sharpness: Optional[float] = DEFAULT_MIN_SHARPNESS,
+    min_vegetation_ratio: Optional[float] = None,
+    check_leaf_presence: bool = False,
 ) -> ScreeningResult:
     """
-    Executes conservative pre-inference image quality screening on an uploaded PIL Image.
+    Executes conservative pre-inference image quality and leaf presence screening on an uploaded PIL Image.
 
     Evaluation checks:
     1. Extreme darkness: mean_luminance < min_luminance (e.g. < 8.0).
     2. Extreme overexposure: mean_luminance > max_luminance and contrast < min_contrast.
     3. Blank / featureless canvas: contrast < min_contrast and vegetation_ratio < 0.01.
     4. Severe blur: sharpness < min_sharpness (only evaluated if min_sharpness is provided).
+    5. Assessable leaf validation: vegetation_ratio < min_vegetation_ratio (e.g. walls, floors, plastic, fabric).
+    6. Synthetic flat surface check: uniform plastic or painted surface lacking biological texture.
 
     Args:
         image: PIL Image to evaluate.
@@ -194,6 +199,8 @@ def screen_image_quality(
         max_luminance: Maximum allowable mean luminance before checking overexposure (default 250.0).
         min_contrast: Minimum allowable contrast standard deviation (default 5.0).
         min_sharpness: Optional minimum sharpness variance threshold.
+        min_vegetation_ratio: Optional minimum vegetation ratio threshold.
+        check_leaf_presence: If True, evaluates whether image contains assessable leaf tissue.
 
     Returns:
         ScreeningResult containing acceptance flag, optional rejection code,
@@ -269,6 +276,27 @@ def screen_image_quality(
             message=(
                 f"The uploaded image lacks sufficient sharpness (sharpness score {sharpness:.2f} is below "
                 f"threshold {min_sharpness:.2f}) and appears severely blurred or out of focus."
+            ),
+            metrics=metrics,
+        )
+
+    # 5. Assessable Leaf Validation (when leaf presence is required: rejects non-plant objects like walls, floors, plastic, fabric, empty scenes)
+    effective_min_veg = (
+        min_vegetation_ratio
+        if min_vegetation_ratio is not None
+        else DEFAULT_MIN_VEGETATION_RATIO
+    )
+    if (check_leaf_presence or min_vegetation_ratio is not None) and veg_ratio < effective_min_veg:
+        logger.warning(
+            f"Image quality screening rejected image: vegetation ratio {veg_ratio:.4f} < {effective_min_veg:.2f} (not a leaf)."
+        )
+        return ScreeningResult(
+            is_acceptable=False,
+            rejection_code="not_a_leaf",
+            message=(
+                f"No assessable crop leaf was detected in the photograph. The image lacks sufficient vegetation "
+                f"or leaf tissue characteristics (detected vegetation ratio is {veg_ratio:.2%}, below {effective_min_veg:.2%}). "
+                "Please capture a clear, well-lit photo of a single crop leaf."
             ),
             metrics=metrics,
         )

@@ -71,6 +71,28 @@ class TestGuidanceService:
         assert data["translation_review_status"] == "draft_translation_pending_native_expert_review"
         assert len(data["sources"]) > 0
 
+    def test_yoruba_fallback_when_translation_missing(self, guidance_service):
+        """Verify fallback to English when Yoruba guidance is missing for a valid class."""
+        # Temporarily mock a class in EN only
+        guidance_service._disease_info_en["Test Only In English"] = {
+            "disease_id": "test_only_in_en",
+            "model_class_id": "Test Only In English",
+            "crop": "Tomato",
+            "display_name": "Test Disease",
+            "scientific_name": "Testus disease",
+            "status": "diseased",
+            "severity": "low",
+            "description": "English only description.",
+            "symptoms": ["Test spot"],
+            "treatment": ["Test treatment"],
+            "prevention": ["Test prevention"],
+        }
+        result = guidance_service.get_guidance_by_label("Test Only In English", lang="yo")
+        assert result["status"] == "success"
+        assert result["language"] == "en"
+        assert "Yorùbá" in result["message"]
+        assert result["data"]["display_name"] == "Test Disease"
+
     # 3. Missing Records & Invalid Indices
     def test_invalid_class_index_out_of_bounds(self, guidance_service):
         """Verify handling of class indices outside the 0-37 range."""
