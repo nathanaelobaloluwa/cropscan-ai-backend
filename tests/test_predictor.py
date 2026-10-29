@@ -49,6 +49,15 @@ class TestPredictionServiceRealInference:
         assert real_predictor.model_name == DEFAULT_MODEL_NAME
         assert real_predictor.confidence_threshold == DEFAULT_CONFIDENCE_THRESHOLD
 
+    def test_memory_optimizations_freeze_and_threads(self, real_predictor):
+        """Verify memory optimizations: frozen parameters and single-thread execution."""
+        # 1. Parameter freezing: no gradient tracking buffers in RAM
+        for param in real_predictor._model.parameters():
+            assert param.requires_grad is False
+
+        # 2. PyTorch intra-op threads constrained to 1 to reduce thread pool memory
+        assert torch.get_num_threads() == 1
+
     def test_genuine_inference_on_sample_image(self, real_predictor):
         """
         Execute genuine inference with the real model on an in-memory sample image.

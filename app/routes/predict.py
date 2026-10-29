@@ -1,3 +1,4 @@
+import gc
 import logging
 
 from flask import Blueprint, jsonify, request
@@ -115,6 +116,11 @@ def predict():
             "error": "unexpected_inference_error",
             "message": "An unexpected error occurred during prediction.",
         }), 500
+    finally:
+        # Promptly release image buffers and collect garbage
+        if "rgb_image" in locals():
+            del rgb_image
+        gc.collect()
 
     # 6. Return Genuine Prediction, Crop Mismatch Protection & Localized Guidance
     return jsonify({

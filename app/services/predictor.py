@@ -1,3 +1,4 @@
+import gc
 import logging
 import os
 from typing import Any, Dict, Optional, Tuple, Union
@@ -118,6 +119,13 @@ class PredictionService:
         self._model: Optional[AutoModelForImageClassification] = None
         self._processor: Optional[MobileNetV2ImageProcessorPil] = None
 
+        # Constrain PyTorch thread pool to 1 thread to avoid memory inflation from OpenMP/MKL
+        # on constrained cloud instances (e.g. Render 512 MB memory limit)
+        try:
+            torch.set_num_threads(1)
+        except Exception:
+            pass
+
         if not lazy_load:
             self.load_model()
 
@@ -149,10 +157,17 @@ class PredictionService:
                     self.model_name,
                 )
 
+            # Freeze model parameters to disable autograd tracking overhead
+            for param in model.parameters():
+                param.requires_grad = False
+
             model.eval()
             model.to(self.device)
             self._model = model
             self._processor = create_image_processor()
+
+            # Clean up temporary deserialization dictionaries and garbage
+            gc.collect()
             logger.info("CropScan AI vision model loaded successfully.")
 
         except Exception as e:
@@ -315,9 +330,14 @@ class PredictionService:
             pixel_values = inputs["pixel_values"].to(self.device)
 
             # 3. Genuine inference forward pass
-            with torch.no_grad():
+            inference_context = (
+                torch.inference_mode()
+                if hasattr(torch, "inference_mode")
+                else torch.no_grad()
+            )
+            with inference_context:
                 outputs = self._model(pixel_values=pixel_values)
-                logits = outputs.logits[0]
+                logits = outputs.logits[0] if hasattr(outputs, "logits") else outputs[0]
                 probabilities = torch.nn.functional.softmax(logits, dim=-1)
 
                 top_prob, top_idx = torch.topk(probabilities, 1)
@@ -339,6 +359,10 @@ class PredictionService:
                 if c_name:
                     crop_probabilities[c_name] = crop_probabilities.get(c_name, 0.0) + float(p_val)
             crop_probabilities = {k: round(v, 4) for k, v in crop_probabilities.items()}
+
+            # Immediately release intermediate PyTorch tensors and collect garbage
+            del inputs, pixel_values, outputs, logits, probabilities
+            gc.collect()
 
         except Exception as e:
             logger.error(f"Inference execution failed: {e}", exc_info=True)
